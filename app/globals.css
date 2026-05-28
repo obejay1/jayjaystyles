@@ -2763,6 +2763,68 @@ textarea:focus {
 }
 
 /* ===============================
+   MOBILE BOTTOM NAVIGATION
+================================ */
+
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #ffffff;
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.07);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 5px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* For iPhone notch */
+  transition: transform 0.3s ease-in-out;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  flex-grow: 1;
+  text-align: center;
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.95);
+  background: #f1f5f9;
+}
+
+.mobile-nav-item.active {
+  color: #d4af37;
+}
+
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: 85px !important;
+  }
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Hide on desktop */
+@media (min-width: 1024px) {
+  .mobile-bottom-nav {
+    display: none;
+  }
+}
+
+/* ===============================
    PREMIUM WISHLIST PAGE
 ================================ */
 

@@ -86,7 +86,7 @@ export default function Services() {
             <Search size={18} />
             <input type="text" placeholder="Search services..." />
           </div>
-          <div className="nav-actions">
+          <div className="nav-actions desktop-only">
             <Link href="/shop" className="nav-link"><ShoppingCart size={20} /><span>Shop</span></Link>
             <Link href="/account" className="nav-link"><User size={20} /><span>Account</span></Link>
           </div>

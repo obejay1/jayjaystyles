@@ -23,7 +23,7 @@ export default function Account() {
             <span className="logo-icon">✨</span>
             <span className="logo-text">JayJayStyles</span>
           </Link>
-          <div className="nav-actions">
+          <div className="nav-actions desktop-only">
             <Link href="/shop" className="nav-link"><span>Shop</span></Link>
             <Link href="/cart" className="nav-link"><span>Cart</span></Link>
           </div>
