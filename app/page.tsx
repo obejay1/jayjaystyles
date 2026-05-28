@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Search, ShoppingCart, User, Scissors, Phone, Mail, MapPin, Star, ArrowRight, Truck, Shield, Headphones, Heart } from 'lucide-react';
 import { getProducts } from '@/lib/store';
 import { Product } from '@/lib/types';
-import Loading from '@/components/Loading';
+import Loading from '@/components/loading';
 import ProductCard from '@/components/ProductCard';
 import { getWishlist } from '@/lib/store';
 

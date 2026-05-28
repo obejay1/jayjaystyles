@@ -7,7 +7,7 @@ import { getProducts } from '@/lib/store';
 import { Product } from '@/lib/types';
 import { saveBooking } from '@/lib/bookings';
 import { sendBookingConfirmation } from '@/lib/email';
-import Loading from '@/components/Loading';
+import Loading from '@/components/loading';
 
 export default function Services() {
   const [services, setServices] = useState<Product[]>([]);
