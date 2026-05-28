@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Search, ShoppingCart, User, Heart } from 'lucide-react';
 import { getProducts } from '@/lib/store';
 import { Product } from '@/lib/types';
-import Loading from '@/components/loading';
+import Loading from '@/components/Loading';
 
 export default function Shop() {
   const [products, setProducts] = useState<Product[]>([]);
