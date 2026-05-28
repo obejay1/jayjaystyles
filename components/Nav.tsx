@@ -1,0 +1,2 @@
+'use client';import Link from 'next/link';import{Home,Search,ShoppingBag,ShoppingCart,User,Scissors}from'lucide-react';import{usePathname}from'next/navigation';
+export default function Nav(){const p=usePathname();const items=[['/','Home',Home],['/shop','Shop',ShoppingBag],['/services','Services',Scissors],['/cart','Cart',ShoppingCart],['/account','Account',User]] as const;return <nav className="bottom-nav">{items.map(([href,label,Icon])=><Link className={`nav-item ${p===href?'active':''}`} href={href} key={href}><Icon size={24}/><span>{label}</span></Link>)}</nav>}
