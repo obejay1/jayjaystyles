@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, User, Heart, ShieldCheck, Truck, RotateCcw, ArrowLeft } from 'lucide-react';
 import { getProducts, addToCart, toggleWishlist, isInWishlist, getCart, money } from '@/lib/store';
@@ -101,8 +102,15 @@ export default function ProductDetail() {
       {/* Navigation */}
       <nav className="top-nav">
         <div className="nav-container">
-          <Link href="/" className="logo">
-            <span className="logo-icon">✨</span>
+          <Link href="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.5rem' }}>
+            <Image
+              src="/logo.png"
+              alt="JayJayStyles Logo"
+              width={50}
+              height={50}
+              priority
+              className="w-10 h-10 md:w-[50px] md:h-[50px] object-contain"
+            />
             <span className="logo-text">JayJayStyles</span>
           </Link>
           <div className="nav-actions desktop-only">

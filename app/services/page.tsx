@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Search, ShoppingCart, User, Scissors, ArrowLeft } from 'lucide-react';
 import { getProducts, getCart } from '@/lib/store';
@@ -86,11 +87,23 @@ export default function Services() {
 
   return (
     <div className="services-desktop-page overflow-x-hidden pb-28 w-full max-w-full">
+      <style>{`
+        @media (max-width: 767px) {
+          .search-bar input::placeholder { color: transparent; }
+        }
+      `}</style>
       {/* Top Nav */}
       <nav className="top-nav">
         <div className="nav-container">
-          <Link href="/" className="logo">
-            <span className="logo-icon">✨</span>
+          <Link href="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.5rem' }}>
+            <Image
+              src="/logo.png"
+              alt="JayJayStyles Logo"
+              width={50}
+              height={50}
+              priority
+              className="w-10 h-10 md:w-[50px] md:h-[50px] object-contain"
+            />
             <span className="logo-text">JayJayStyles</span>
           </Link>
           <div className="search-bar">

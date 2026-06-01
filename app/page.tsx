@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Search, ShoppingCart, User, Scissors, Phone, Mail, MapPin, ArrowRight, Truck, Shield, Headphones, Heart, MessageCircle } from 'lucide-react';
 import { getProducts, getWishlist, getCart } from '@/lib/store';
@@ -42,258 +43,21 @@ export default function Home() {
 
   return (
     <div className="home-page-pro">
-      <style>{`
-        * { box-sizing: border-box; }
-        .home-page-pro { width: 100%; overflow-x: hidden; padding-bottom: 90px; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        
-        /* Top Nav */
-        .top-nav { background: white; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 50; }
-        .nav-container { display: flex; align-items: center; justify-content: space-between; padding: 16px; max-width: 1200px; margin: 0 auto; gap: 16px; }
-        .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #111; font-weight: 800; font-size: 1.25rem; white-space: nowrap; }
-        
-        .search-bar { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 10px 16px; border-radius: 999px; flex: 1; max-width: 500px; }
-        .search-bar input { border: none; background: transparent; outline: none; width: 100%; font-size: 1rem; }
-        
-        .nav-actions { display: flex; align-items: center; gap: 20px; }
-        .nav-link { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #4b5563; text-decoration: none; font-size: 0.75rem; font-weight: 500; transition: color 0.2s; }
-        .nav-link:hover { color: #d4a574; }
-        
-        @media (max-width: 767px) { 
-          .desktop-only { display: none !important; } 
-          .nav-container { flex-wrap: wrap; }
-          .search-bar { order: 3; max-width: 100%; margin-top: 8px; }
-        }
-
-        /* Hero Section */
-        .hero-pro {
-          background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-          color: white;
-          padding: 60px 20px;
-          text-align: center;
-          position: relative;
-          overflow: hidden;
-        }
-        .hero-content {
-          max-width: 800px;
-          margin: 0 auto;
-          position: relative;
-          z-index: 2;
-        }
-        .hero-badge {
-          display: inline-block;
-          background: rgba(212, 165, 116, 0.2);
-          color: #d4a574;
-          padding: 6px 16px;
-          border-radius: 999px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          margin-bottom: 24px;
-          border: 1px solid rgba(212, 165, 116, 0.4);
-        }
-        .hero-content h1 {
-          font-size: 3rem;
-          font-weight: 800;
-          margin: 0 0 20px 0;
-          line-height: 1.2;
-          letter-spacing: -1px;
-        }
-        .hero-content p {
-          font-size: 1.125rem;
-          color: #9ca3af;
-          margin: 0 auto 32px 0;
-          line-height: 1.6;
-          max-width: 600px;
-        }
-        .hero-buttons {
-          display: flex;
-          gap: 16px;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-        .btn-primary {
-          background: #d4a574;
-          color: #111;
-          padding: 14px 32px;
-          border-radius: 999px;
-          font-weight: 700;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          transition: background 0.2s;
-        }
-        .btn-primary:hover { background: #c49464; }
-        .btn-secondary {
-          background: transparent;
-          color: white;
-          padding: 14px 32px;
-          border-radius: 999px;
-          font-weight: 700;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          border: 2px solid white;
-          transition: all 0.2s;
-        }
-        .btn-secondary:hover { background: white; color: #111; }
-        
-        @media (max-width: 640px) {
-          .hero-content h1 { font-size: 2.25rem; }
-          .hero-content p { font-size: 1rem; }
-          .hero-buttons { flex-direction: column; width: 100%; }
-          .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
-        }
-
-        /* Features */
-        .features-pro {
-          background: white;
-          padding: 40px 20px;
-          border-bottom: 1px solid #e5e5e5;
-        }
-        .features-grid {
-          max-width: 1200px;
-          margin: 0 auto;
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-        }
-        .feature-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          gap: 12px;
-        }
-        .feature-icon {
-          width: 64px;
-          height: 64px;
-          background: #f8fafc;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #d4a574;
-        }
-        .feature-item h3 { font-size: 1.125rem; margin: 0; color: #111; }
-        .feature-item p { font-size: 0.875rem; color: #6b7280; margin: 0; }
-        @media (max-width: 768px) {
-          .features-grid { grid-template-columns: 1fr; }
-        }
-
-        /* Products Section */
-        .section-pro {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 60px 16px;
-        }
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          margin-bottom: 32px;
-        }
-        .section-title h2 { font-size: 2rem; margin: 0 0 8px 0; color: #111; letter-spacing: -0.5px; }
-        .section-title p { margin: 0; color: #6b7280; }
-        .view-all {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          color: #d4a574;
-          font-weight: 600;
-          text-decoration: none;
-        }
-        
-        .product-grid-pro {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 16px;
-        }
-        @media (min-width: 768px) { .product-grid-pro { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
-        @media (min-width: 1024px) { .product-grid-pro { grid-template-columns: repeat(4, 1fr); } }
-
-        /* Contact Section */
-        .contact-pro {
-          background: #111827;
-          color: white;
-          padding: 60px 20px;
-          border-radius: 24px;
-          margin: 40px 16px;
-        }
-        .contact-container {
-          max-width: 1000px;
-          margin: 0 auto;
-          text-align: center;
-        }
-        .contact-container h2 { font-size: 2rem; margin: 0 0 16px 0; }
-        .contact-container p { color: #9ca3af; margin: 0 0 40px 0; font-size: 1.125rem; }
-        .contact-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 24px;
-          text-align: left;
-        }
-        .contact-card {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          padding: 32px;
-          border-radius: 16px;
-          display: flex;
-          align-items: flex-start;
-          gap: 16px;
-        }
-        .contact-icon {
-          color: #d4a574;
-          background: rgba(212, 165, 116, 0.1);
-          padding: 12px;
-          border-radius: 12px;
-        }
-        .contact-card h3 { margin: 0 0 12px 0; font-size: 1.125rem; }
-        .contact-card a { color: #e5e5e5; text-decoration: none; display: block; margin-bottom: 8px; font-size: 0.9375rem; }
-        .contact-card a:hover { color: #d4a574; }
-
-        /* Footer */
-        .footer-pro {
-          background: white;
-          border-top: 1px solid #e5e5e5;
-          padding: 60px 20px 20px;
-        }
-        .footer-grid {
-          max-width: 1200px;
-          margin: 0 auto 40px;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 40px;
-        }
-        .footer-brand h3 { font-size: 1.5rem; font-weight: 800; margin: 0 0 16px 0; color: #111; }
-        .footer-brand p { color: #6b7280; line-height: 1.6; margin: 0; }
-        .footer-links h4 { font-size: 1.125rem; margin: 0 0 20px 0; color: #111; }
-        .footer-links ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
-        .footer-links a { color: #6b7280; text-decoration: none; }
-        .footer-links a:hover { color: #d4a574; }
-        .footer-bottom {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding-top: 20px;
-          border-top: 1px solid #e5e5e5;
-          text-align: center;
-          color: #9ca3af;
-          font-size: 0.875rem;
-        }
-      `}</style>
 
       {/* TOP NAVIGATION */}
       <nav className="top-nav">
         <div className="nav-container">
-          <Link href="/" className="logo">
-            <span className="logo-icon">✨</span>
+          <Link href="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.5rem' }}>
+            <Image
+              src="/logo.png"
+              alt="JayJayStyles Logo"
+              width={50}
+              height={50}
+              priority
+              className="w-10 h-10 md:w-[50px] md:h-[50px] object-contain"
+            />
             <span className="logo-text">JayJayStyles</span>
           </Link>
-
-          <div className="search-bar">
-            <Search size={18} color="#6b7280" />
-            <input type="text" placeholder="Search products or services..." />
-          </div>
 
           <div className="nav-actions desktop-only">
             <Link href="/services" className="nav-link">
@@ -325,33 +89,56 @@ export default function Home() {
       {/* HERO SECTION */}
       <section className="hero-pro">
         <div className="hero-content">
-          <div className="hero-badge">Premium Beauty & Cleaning</div>
-          <h1>Look Good, Live Clean</h1>
-          <p>Professional beauty services and premium products delivered to your doorstep in lagos.</p>
+          <div className="hero-badge">Look Beautiful. Live Stylish.</div>
+          <h1>Welcome to JayJayStyles</h1>
+          <p>Your trusted destination for premium beauty products, fashion accessories, hair essentials, and home accessories across Nigeria.</p>
           <div className="hero-buttons">
-            <Link href="/shop" className="btn-primary">Shop Now <ArrowRight size={18} /></Link>
+            <Link href="/shop" className="btn-primary">Shop with Confidence <ArrowRight size={18} /></Link>
             <Link href="/services" className="btn-secondary">Book a Service <Scissors size={18} /></Link>
           </div>
         </div>
       </section>
 
-      {/* TRUST BADGES */}
+      {/* WHY CHOOSE JAYJAYSTYLES */}
       <section className="features-pro">
         <div className="features-grid">
           <div className="feature-item">
             <div className="feature-icon"><Truck size={28} /></div>
-            <h3>Fast Delivery</h3>
-            <p>Reliable and fast delivery to your doorstep anywhere in Lagos.</p>
+            <h3>Fast and Secure Delivery</h3>
+            <p>Convenient online shopping with reliable shipping across Nigeria.</p>
           </div>
           <div className="feature-item">
             <div className="feature-icon"><Shield size={28} /></div>
-            <h3>Quality Guaranteed</h3>
-            <p>100% authentic premium beauty and cleaning products.</p>
+            <h3>Premium Quality</h3>
+            <p>Curated beauty, fashion and home products sourced for authenticity and style.</p>
           </div>
           <div className="feature-item">
             <div className="feature-icon"><Headphones size={28} /></div>
-            <h3>24/7 Support</h3>
-            <p>Our dedicated team is always ready to assist you.</p>
+            <h3>Dedicated Support</h3>
+            <p>Expert customer care ready to help with orders and service bookings.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="offer-section">
+        <div className="offer-grid">
+          <div className="offer-card">
+            <h3>Hair & Beauty Essentials</h3>
+            <p>Discover a wide selection of products designed to keep your hair healthy, stylish, and beautiful.</p>
+            <ul>
+              <li>Hair extensions, wigs, and hair accessories</li>
+              <li>Hair care products, maintenance essentials, and styling tools</li>
+              <li>Beads, gele accessories, and premium styling accents</li>
+            </ul>
+          </div>
+          <div className="offer-card">
+            <h3>Makeup, Fashion & Home</h3>
+            <p>Complete your look with elegant beauty products, fashionable accessories, and quality home essentials.</p>
+            <ul>
+              <li>Face makeup, lip products, skincare, and beauty tools</li>
+              <li>Elegant beads, jewelry, and fashion accessories</li>
+              <li>Kitchen utensils, home organizers, and everyday living essentials</li>
+            </ul>
           </div>
         </div>
       </section>
@@ -375,16 +162,40 @@ export default function Home() {
             View All Products
           </Link>
         </div>
-        <style>{`
-          .mobile-only-block { display: none; }
-          @media (max-width: 767px) { .mobile-only-block { display: block; } }
-        `}</style>
+      </section>
+
+      {/* PROFESSIONAL SERVICES */}
+      <section className="services-info-pro">
+        <div className="services-info-container">
+          <div className="services-info-text">
+            <h2>Professional Beauty Services</h2>
+            <p>Beyond products, JayJayStyles offers tailored beauty services to help you look and feel confident for every occasion.</p>
+            <ul className="services-list">
+              <li>Hair styling and treatment</li>
+              <li>Beauty consultations</li>
+              <li>Special occasion styling</li>
+              <li>Bridal beauty services</li>
+              <li>Professional beauty care</li>
+            </ul>
+            <Link href="/services" className="btn-primary" style={{ display: 'inline-flex' }}>Explore Services <Scissors size={18} /></Link>
+          </div>
+          <div className="services-info-image">
+             <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800" alt="Professional Beauty Services" />
+          </div>
+        </div>
       </section>
 
       {/* Professional Contact Section */}
       <section className="contact-pro">
         <div className="contact-container">
-          <h2>Need help or want to make an order?</h2>
+          <div style={{ marginBottom: '40px' }}>
+             <h2 style={{ fontSize: '1.75rem', marginBottom: '12px' }}>Serving Customers Across Nigeria</h2>
+             <p style={{ maxWidth: '800px', margin: '0 auto', color: '#9ca3af', lineHeight: 1.6 }}>We are committed to providing a smooth shopping experience for customers across Nigeria. From beauty products to fashion accessories and home essentials, we ensure quality, affordability, and customer satisfaction in every order.</p>
+          </div>
+          <hr style={{ borderColor: 'rgba(255,255,255,0.1)', borderTop: 'none', marginBottom: '40px' }} />
+          <h2 style={{ fontSize: '1.75rem', marginBottom: '12px', color: '#d4a574' }}>JayJayStyles</h2>
+          <p style={{ color: '#fff', marginBottom: '32px', fontSize: '1.125rem' }}>Your One-Stop Destination for Beauty, Fashion, Hair Essentials, and Home Accessories.</p>
+          <h2>Need help with an order or service booking?</h2>
           <p>Reach out to our customer service team. We are available to help you with your bookings and orders.</p>
           <div className="contact-grid">
             <div className="contact-card">

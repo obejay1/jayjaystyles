@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Search, ShoppingCart, User, Heart } from 'lucide-react';
 import { getProducts, getWishlist, getCart } from '@/lib/store';
@@ -16,7 +17,6 @@ export default function Shop() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [search, setSearch] = useState('');
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getProducts().then(res => {
@@ -59,20 +59,17 @@ export default function Shop() {
       {/* Navigation */}
       <nav className="top-nav">
         <div className="nav-container">
-          <Link href="/" className="logo">
-            <span className="logo-icon">✨</span>
+          <Link href="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.5rem' }}>
+            <Image
+              src="/logo.png"
+              alt="JayJayStyles Logo"
+              width={50}
+              height={50}
+              priority
+              className="w-10 h-10 md:w-[50px] md:h-[50px] object-contain"
+            />
             <span className="logo-text">JayJayStyles</span>
           </Link>
-          <div className="search-bar">
-            <Search size={18} />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
           <div className="nav-actions desktop-only">
             <Link href="/cart" className="nav-link">
               <div style={{ position: 'relative' }}>
@@ -169,19 +166,18 @@ export default function Shop() {
             .shop-hero-content p { color: #9ca3af; max-width: 500px; margin: 0 auto 24px; line-height: 1.5; }
             .shop-hero-btn { background: #d4af37; color: #111; border: none; padding: 12px 28px; border-radius: 999px; font-weight: 700; cursor: pointer; font-size: 1rem; }
             
-            .top-nav { background: white; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 50; }
-            .nav-container { display: flex; align-items: center; justify-content: space-between; padding: 16px; max-width: 1200px; margin: 0 auto; }
-            .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #111; font-weight: 800; font-size: 1.25rem; }
+            .top-nav { background: white; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 50; width: 100%; }
+            .nav-container { display: flex; align-items: center; justify-content: space-between; padding: 16px; max-width: 1200px; margin: 0 auto; gap: 12px; width: 100%; box-sizing: border-box; }
+            .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111; font-weight: 800; font-size: 1.5rem; white-space: nowrap; flex-shrink: 0; }
             
-            .search-bar { display: none; }
-            @media (min-width: 768px) {
-              .search-bar { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 8px 16px; border-radius: 999px; flex: 1; max-width: 400px; margin: 0 24px; }
-              .search-bar input { border: none; background: transparent; outline: none; width: 100%; }
+            .nav-actions { display: flex; align-items: center; gap: 20px; }
+            .nav-link { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #4b5563; text-decoration: none; font-size: 0.75rem; font-weight: 500; transition: color 0.2s; }
+            .nav-link:hover { color: #d4a574; }
+            
+            @media (max-width: 767px) { 
+              .desktop-only { display: none !important; } 
+              .nav-container { padding-left: 16px; padding-right: 16px; }
             }
-            
-            .nav-actions { display: flex; align-items: center; gap: 16px; }
-            .nav-link { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #4b5563; text-decoration: none; font-size: 0.75rem; }
-            @media (max-width: 767px) { .desktop-only { display: none; } }
           `}</style>
           {filteredProducts.length === 0 ? (
             <div className="shop-empty-pro">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { User, Package, Heart, Settings, LogOut, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -51,8 +52,15 @@ export default function Account() {
     <div className="account-page-pro" style={{ minHeight: '100vh', background: '#f8fafc', paddingBottom: '90px' }}>
       <nav className="top-nav" style={{ position: 'static' }}>
         <div className="nav-container">
-          <Link href="/" className="logo">
-            <span className="logo-icon">✨</span>
+          <Link href="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.5rem' }}>
+            <Image
+              src="/logo.png"
+              alt="JayJayStyles Logo"
+              width={50}
+              height={50}
+              priority
+              className="w-10 h-10 md:w-[50px] md:h-[50px] object-contain"
+            />
             <span className="logo-text">JayJayStyles</span>
           </Link>
           <div className="nav-actions desktop-only">

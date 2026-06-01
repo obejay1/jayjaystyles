@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -29,10 +30,12 @@ export default function Cart() {
     setCart(cartItems.filter(item => item.id !== id));
   };
 
-  const cartDetails = cartItems.map(c => {
+  const cartDetails = cartItems
+  .map(c => {
     const p = products.find(x => x.id === c.id);
     return p ? { ...p, quantity: c.qty } : null;
-  }).filter(Boolean) as unknown[];
+  })
+  .filter(Boolean) as (Product & { quantity: number })[];
 
   const cartTotal = cartDetails.reduce((total, item) => total + (item.price * item.quantity), 0);
 
@@ -40,8 +43,15 @@ export default function Cart() {
     <div className="checkout-page-pro overflow-x-hidden pb-28 w-full max-w-full">
       <nav className="top-nav" style={{ position: 'static' }}>
         <div className="nav-container">
-          <Link href="/" className="logo">
-            <span className="logo-icon">✨</span>
+          <Link href="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.5rem' }}>
+            <Image
+              src="/logo.png"
+              alt="JayJayStyles Logo"
+              width={50}
+              height={50}
+              priority
+              className="w-10 h-10 md:w-[50px] md:h-[50px] object-contain"
+            />
             <span className="logo-text">JayJayStyles</span>
           </Link>
           <Link href="/shop" className="nav-link" style={{ flexDirection: 'row', gap: '8px', fontWeight: 600 }}>
