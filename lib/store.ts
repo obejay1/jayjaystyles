@@ -97,7 +97,7 @@ export function addToCart(id: string) {
 export function getWishlist() {
   try {
     return JSON.parse(ls?.getItem('wishlist') || '[]') as string[];
-  } catch (e) {
+  } catch {
     return [];
   }
 }

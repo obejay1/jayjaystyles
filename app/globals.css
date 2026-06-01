@@ -2956,3 +2956,10 @@ textarea:focus {
     padding: 60px 20px;
   }
 }
+
+/* Global Layout Fixes */
+html, body {
+  overflow-x: hidden;
+  width: 100vw;
+  max-width: 100%;
+}

@@ -183,7 +183,7 @@ export default function Admin() {
             className="input"
             value={form.type}
             onChange={(e) =>
-              setForm({ ...form, type: e.target.value as any })
+              setForm({ ...form, type: e.target.value as string })
             }
           >
             <option value="product">Product</option>
@@ -619,7 +619,7 @@ export default function Admin() {
                     <td>{c.expiryDate || '-'}</td>
                     <td>{c.active ? 'Active' : 'Inactive'}</td>
                     <td>
-                      <button onClick={() => setCouponForm(c as any)}>
+                      <button onClick={() => setCouponForm(c as unknown)}>
                         Edit
                       </button>
 

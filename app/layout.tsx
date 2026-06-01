@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css"; // <-- This imports the CSS file
+import "./globals.css";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,8 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
         <MobileBottomNav />
+
+        <GoogleAnalytics gaId="G-MTLYK7BGNC" />
       </body>
     </html>
   );

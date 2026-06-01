@@ -33,7 +33,7 @@ export default function Checkout() {
           }
         : null;
     })
-    .filter(Boolean) as any[];
+    .filter(Boolean) as unknown[];
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const shipping = subtotal > 0 ? 1500 : 0;
@@ -74,7 +74,7 @@ export default function Checkout() {
     amount: total * 100,
     publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
     text: `Pay ${money(total)}`,
-    onSuccess: (response: any) => saveOrder(response.reference),
+    onSuccess: (response: unknown) => saveOrder((response as { reference: string }).reference),
     onClose: () => alert('Payment cancelled'),
   };
 

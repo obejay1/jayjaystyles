@@ -1,28 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, ShoppingBag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { getCart, setCart, getProducts } from '@/lib/store';
+import { Product } from '@/lib/types';
 
 export default function Cart() {
-  // Mock cart state for visual redesign. Replace this with your actual global state/hook (e.g., useCart)
-  const [cart, setCart] = useState([
-    { id: '1', name: 'Luxury Hair Extensions', price: 45000, quantity: 1, image: '', category: 'Hair' },
-    { id: '2', name: 'Premium Skincare Set', price: 25000, quantity: 2, image: '', category: 'Beauty' }
-  ]);
+  const router = useRouter();
+  const [cartItems, setCartItems] = useState<{ id: string; qty: number }[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setCartItems(getCart());
+    getProducts().then(setProducts);
+
+    const handleCartUpdate = () => setCartItems(getCart());
+    window.addEventListener('cart', handleCartUpdate);
+    return () => window.removeEventListener('cart', handleCartUpdate);
+  }, []);
 
   const updateQuantity = (id: string, newQty: number) => {
-    setCart(cart.map(item => item.id === id ? { ...item, quantity: newQty } : item));
+    setCart(cartItems.map(item => item.id === id ? { ...item, qty: newQty } : item));
   };
 
   const removeFromCart = (id: string) => {
-    setCart(cart.filter(item => item.id !== id));
+    setCart(cartItems.filter(item => item.id !== id));
   };
 
-  const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const cartDetails = cartItems.map(c => {
+    const p = products.find(x => x.id === c.id);
+    return p ? { ...p, quantity: c.qty } : null;
+  }).filter(Boolean) as unknown[];
+
+  const cartTotal = cartDetails.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   return (
-    <div className="checkout-page-pro">
+    <div className="checkout-page-pro overflow-x-hidden pb-28 w-full max-w-full">
       <nav className="top-nav" style={{ position: 'static' }}>
         <div className="nav-container">
           <Link href="/" className="logo">
@@ -39,14 +54,14 @@ export default function Cart() {
         <div>
           <p>Your Bag</p>
           <h1>Review Your Cart</h1>
-          <span>{cart.length} items in your bag</span>
+          <span>{cartDetails.length} items in your bag</span>
         </div>
       </div>
 
-      <div className="checkout-layout-pro" style={{ marginTop: '-60px' }}>
-        <div className="checkout-card-pro">
+      <div className="checkout-layout-pro w-full max-w-full" style={{ marginTop: '-60px' }}>
+        <div className="checkout-card-pro w-full max-w-full overflow-hidden">
           <h2>Cart Items</h2>
-          {cart.length === 0 ? (
+          {cartDetails.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
               <ShoppingBag size={48} color="#ccc" style={{ margin: '0 auto 16px' }} />
               <h3>Your cart is empty</h3>
@@ -56,11 +71,11 @@ export default function Cart() {
             </div>
           ) : (
             <div className="checkout-items-pro">
-              {cart.map(item => (
-                <div key={item.id} className="checkout-item-pro" style={{ gridTemplateColumns: '80px 1fr auto auto' }}>
-                  <img src={item.image || `https://placehold.co/80x80/f5f5f5/333?text=${encodeURIComponent(item.name.substring(0,2))}`} alt={item.name} />
-                  <div>
-                    <h3>{item.name}</h3>
+              {cartDetails.map(item => (
+                <div key={item.id} className="checkout-item-pro flex flex-col sm:flex-row gap-4 w-full max-w-full overflow-hidden items-start sm:items-center p-4">
+                  <img src={item.image || `https://placehold.co/80x80/f5f5f5/333?text=${encodeURIComponent(item.name.substring(0,2))}`} alt={item.name} className="w-24 h-24 object-cover rounded flex-shrink-0" />
+                  <div className="flex-1 break-words w-full">
+                    <h3 className="truncate">{item.name}</h3>
                     <p style={{ fontSize: '13px', color: '#888' }}>{item.category}</p>
                     <button 
                       onClick={() => removeFromCart(item.id)}
@@ -69,12 +84,12 @@ export default function Cart() {
                       <Trash2 size={14} /> Remove
                     </button>
                   </div>
-                  <div className="qty" style={{ alignSelf: 'center', display: 'flex', alignItems: 'center', gap: '12px', background: '#f5f5f5', padding: '6px 12px', borderRadius: '999px' }}>
+                  <div className="qty flex-shrink-0 self-start sm:self-center" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f5f5f5', padding: '6px 12px', borderRadius: '999px' }}>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }} onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}>-</button>
                     <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{item.quantity}</span>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }} onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
                   </div>
-                  <div style={{ fontWeight: '800', fontSize: '16px', alignSelf: 'center' }}>
+                  <div className="whitespace-nowrap self-start sm:self-center" style={{ fontWeight: '800', fontSize: '16px' }}>
                     ₦{(item.price * item.quantity).toLocaleString()}
                   </div>
                 </div>
@@ -83,7 +98,7 @@ export default function Cart() {
           )}
         </div>
 
-        <div className="checkout-summary-pro">
+        <div className="checkout-summary-pro w-full max-w-full overflow-hidden">
           <h2>Order Summary</h2>
           <div className="checkout-summary-line">
             <span>Subtotal</span>
@@ -103,8 +118,8 @@ export default function Cart() {
           </div>
           <button 
             className="checkout-pay-btn-pro" 
-            disabled={cart.length === 0}
-            onClick={() => alert('Proceeding to checkout')}
+            disabled={cartDetails.length === 0}
+            onClick={() => router.push('/checkout')}
           >
             Proceed to Checkout
           </button>

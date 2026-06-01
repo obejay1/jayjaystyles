@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"app/services/page.tsx -> @/lib/bookings\":{\"id\":\"app/services/page.tsx -> @/lib/bookings\",\"files\":[\"static/chunks/_app-pages-browser_lib_bookings_ts.js\"]},\"app/services/page.tsx -> @/lib/email\":{\"id\":\"app/services/page.tsx -> @/lib/email\",\"files\":[\"static/chunks/_app-pages-browser_lib_email_ts.js\"]}}"

@@ -1,128 +1,79 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { showToast } from '@/lib/toast';
+import { ArrowLeft } from 'lucide-react';
 
-export default function LoginPage() {
+export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function login() {
-    setLoading(true);
-    
-    // Check memory box for users
-    const users = JSON.parse(localStorage.getItem('jj-users') || '[]');
-    
-    // Find user with matching email AND password
-    const user = users.find((u: any) => u.email === email && u.password === password);
-    
-    if (user) {
-      // Yay! Found them! Save to "current user" memory box
-      localStorage.setItem('jj-user', JSON.stringify({
-        email: user.email,
-        name: user.name,
-        phone: user.phone
-      }));
-      
-      alert('Login successful! Welcome back, ' + user.name);
-      window.location.href = '/account';
-    } else {
-      alert('Wrong email or password! Try again.');
+  useEffect(() => {
+    // Redirect to account if already logged in
+    if (localStorage.getItem('jj-user')) {
+      router.replace('/account');
     }
-    
-    setLoading(false);
-  }
+  }, [router]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // Simulate API authorization layer
+    setTimeout(() => {
+      setLoading(false);
+      const users = JSON.parse(localStorage.getItem('jj-users') || '[]');
+      const user = users.find((u: any) => u.email === email && u.password === password);
+
+      if (user) {
+        // Exclude password from the active session cookie
+        const { password: _, ...sessionUser } = user;
+        localStorage.setItem('jj-user', JSON.stringify(sessionUser));
+        showToast('Successfully logged in!', 'success');
+        router.push('/account');
+      } else {
+        showToast('Invalid email or password. Please try again.', 'error');
+      }
+    }, 1000);
+  };
 
   return (
-    <main style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: '#f8f9fa',
-      padding: 20
-    }}>
-      <div style={{
-        background: '#fff',
-        padding: 40,
-        borderRadius: 20,
-        width: '100%',
-        maxWidth: 420,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.08)'
-      }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>
-          Welcome Back! 👋
-        </h1>
-        <p style={{ color: '#888', textAlign: 'center', marginBottom: 32 }}>
-          Sign in to your JayJayStyles account
-        </p>
-
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-            Email Address
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              border: '2px solid #e5e5e5',
-              borderRadius: 12,
-              fontSize: 16,
-              outline: 'none'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 24 }}>
-          <label style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              border: '2px solid #e5e5e5',
-              borderRadius: 12,
-              fontSize: 16,
-              outline: 'none'
-            }}
-          />
-        </div>
-
-        <button
-          onClick={login}
-          disabled={loading}
-          style={{
-            width: '100%',
-            background: '#d4a574',
-            color: '#fff',
-            border: 'none',
-            padding: 16,
-            borderRadius: 12,
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-
-        <p style={{ textAlign: 'center', marginTop: 24, color: '#888' }}>
-          Don&apos;t have an account?{' '}
-          <Link href="/register" style={{ color: '#d4a574', fontWeight: 600, textDecoration: 'none' }}>
-            Create one
-          </Link>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ background: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', width: '100%', maxWidth: '400px' }}>
+        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#64748b', textDecoration: 'none', marginBottom: '24px', fontWeight: 600 }}>
+          <ArrowLeft size={16} /> Back to Home
+        </Link>
+        <h1 style={{ fontSize: '28px', marginBottom: '8px', color: '#111827' }}>Welcome Back</h1>
+        <p style={{ color: '#64748b', marginBottom: '24px' }}>Sign in to manage your account and orders.</p>
+        
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>Email Address</label>
+            <input 
+              type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }} placeholder="Enter your email"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>Password</label>
+            <input 
+              type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }} placeholder="Enter your password"
+            />
+          </div>
+          <button type="submit" disabled={loading} style={{ background: '#111827', color: 'white', padding: '16px', borderRadius: '12px', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '8px', opacity: loading ? 0.8 : 1 }}>
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+        
+        <p style={{ textAlign: 'center', marginTop: '24px', color: '#64748b', fontSize: '14px' }}>
+          Don't have an account? <Link href="/register" style={{ color: '#111827', fontWeight: 700, textDecoration: 'none' }}>Register here</Link>
         </p>
       </div>
-    </main>
+    </div>
   );
 }
