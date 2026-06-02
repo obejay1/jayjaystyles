@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, ShoppingCart, User, Scissors, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, User, Scissors, ArrowLeft } from 'lucide-react';
 import { getProducts, getCart } from '@/lib/store';
 import { Product } from '@/lib/types';
 import Loading from '@/components/Loading';
@@ -87,11 +87,6 @@ export default function Services() {
 
   return (
     <div className="services-desktop-page overflow-x-hidden pb-28 w-full max-w-full">
-      <style>{`
-        @media (max-width: 767px) {
-          .search-bar input::placeholder { color: transparent; }
-        }
-      `}</style>
       {/* Top Nav */}
       <nav className="top-nav">
         <div className="nav-container">
@@ -106,10 +101,6 @@ export default function Services() {
             />
             <span className="logo-text">JayJayStyles</span>
           </Link>
-          <div className="search-bar">
-            <Search size={18} />
-            <input type="text" placeholder="Search services..." />
-          </div>
           <div className="nav-actions desktop-only">
             <Link href="/cart" className="nav-link">
               <div style={{ position: 'relative' }}>

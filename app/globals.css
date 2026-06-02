@@ -2963,3 +2963,621 @@ html, body {
   width: 100vw;
   max-width: 100%;
 }
+.wishlist-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding-bottom: 110px;
+  overflow-x: hidden;
+}
+
+.wishlist-hero {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 55%, #d4a574 160%);
+  color: white;
+  padding: 70px 20px 90px;
+  text-align: center;
+}
+
+.wishlist-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: rgba(212, 165, 116, 0.18);
+  color: #d4a574;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wishlist-label {
+  text-transform: uppercase;
+  color: #d4a574;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.wishlist-hero h1 {
+  font-size: clamp(2.4rem, 8vw, 4rem);
+  font-weight: 900;
+  margin-bottom: 14px;
+}
+
+.wishlist-subtitle {
+  max-width: 620px;
+  margin: 0 auto;
+  color: #d1d5db;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.wishlist-content {
+  width: min(1120px, calc(100% - 32px));
+  margin: -48px auto 0;
+  background: white;
+  border-radius: 28px;
+  padding: 22px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+.wishlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.wishlist-small-title {
+  color: #d4a574;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.wishlist-header h2 {
+  font-size: 1.6rem;
+  color: #111827;
+  margin-top: 4px;
+}
+
+.wishlist-shop-link,
+.wishlist-empty-btn {
+  background: #111827;
+  color: white;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wishlist-empty {
+  min-height: 360px;
+  border: 1px dashed #d1d5db;
+  border-radius: 24px;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 36px 20px;
+}
+
+.wishlist-empty-icon {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #d4a574;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.wishlist-empty h2 {
+  font-size: 1.7rem;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.wishlist-empty p {
+  max-width: 460px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin-bottom: 22px;
+}
+
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (min-width: 768px) {
+  .wishlist-content {
+    padding: 32px;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .wishlist-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .wishlist-hero {
+    padding: 52px 16px 78px;
+  }
+
+  .wishlist-content {
+    width: calc(100% - 24px);
+    margin-top: -42px;
+    border-radius: 24px;
+    padding: 16px;
+  }
+
+  .wishlist-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wishlist-shop-link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+.jj-home {
+  background: #f8f4ec;
+  color: #111827;
+  overflow-x: hidden;
+  padding-bottom: 90px;
+}
+
+.jj-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #050505;
+  border-bottom: 1px solid rgba(212, 165, 116, 0.25);
+}
+
+.jj-nav-inner {
+  max-width: 1250px;
+  margin: auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.jj-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #d4a574;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.jj-logo span {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.jj-logo small {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f3d9a4;
+}
+
+.jj-search {
+  flex: 1;
+  background: #fff;
+  border-radius: 999px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.jj-search input {
+  border: 0;
+  outline: 0;
+  width: 100%;
+  font-size: 1rem;
+  background: transparent;
+}
+
+.jj-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.jj-actions a {
+  color: #d4a574;
+  position: relative;
+}
+
+.jj-actions b {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jj-hero {
+  position: relative;
+  min-height: 690px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #050505;
+}
+
+.jj-hero-img {
+  object-fit: cover;
+  object-position: center;
+}
+
+.jj-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.88), rgba(0,0,0,0.55), rgba(0,0,0,0.18));
+  z-index: 1;
+}
+
+.jj-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 620px;
+  margin-left: max(24px, calc((100vw - 1250px) / 2));
+  padding: 80px 20px;
+  color: white;
+}
+
+.jj-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(212, 165, 116, 0.7);
+  color: #f3d9a4;
+  background: rgba(212, 165, 116, 0.14);
+  padding: 10px 18px;
+  border-radius: 999px;
+  margin-bottom: 22px;
+  font-weight: 800;
+}
+
+.jj-hero h1 {
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 0.95;
+  margin-bottom: 24px;
+  font-weight: 950;
+  letter-spacing: -0.05em;
+}
+
+.jj-hero p {
+  color: #e5e7eb;
+  font-size: 1.2rem;
+  line-height: 1.8;
+  margin-bottom: 34px;
+}
+
+.jj-hero-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.jj-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  padding: 16px 28px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.jj-btn-gold {
+  background: #d4a574;
+  color: #111;
+}
+
+.jj-btn-outline {
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.jj-trust {
+  width: min(1150px, calc(100% - 32px));
+  margin: -46px auto 70px;
+  position: relative;
+  z-index: 5;
+  background: #0b0b0b;
+  border: 1px solid rgba(212, 165, 116, 0.4);
+  border-radius: 24px;
+  padding: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  color: white;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+}
+
+.jj-trust div {
+  text-align: center;
+}
+
+.jj-trust svg {
+  color: #d4a574;
+  margin-bottom: 10px;
+}
+
+.jj-trust h3 {
+  margin-bottom: 4px;
+}
+
+.jj-trust p {
+  color: #d1d5db;
+}
+
+.jj-categories,
+.jj-products,
+.jj-services,
+.jj-contact {
+  width: min(1150px, calc(100% - 32px));
+  margin: 0 auto 70px;
+}
+
+.jj-categories h2,
+.jj-products h2,
+.jj-services h2,
+.jj-contact h2 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-bottom: 20px;
+}
+
+.jj-category-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+}
+
+.jj-category-grid a {
+  background: white;
+  color: #111827;
+  text-decoration: none;
+  padding: 22px 16px;
+  border-radius: 20px;
+  text-align: center;
+  font-weight: 900;
+  box-shadow: 0 14px 35px rgba(0,0,0,0.08);
+  border: 1px solid #eee;
+}
+
+.jj-section-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.jj-section-header small,
+.jj-services small {
+  color: #d4a574;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.jj-section-header a {
+  color: #111827;
+  font-weight: 900;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jj-product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+
+.jj-services {
+  background: #111827;
+  color: white;
+  border-radius: 36px;
+  padding: 60px;
+  background-image: linear-gradient(135deg, #111827, #000);
+}
+
+.jj-services p {
+  color: #d1d5db;
+  max-width: 700px;
+  line-height: 1.8;
+  margin-bottom: 28px;
+}
+
+.jj-contact {
+  text-align: center;
+  background: white;
+  padding: 50px 24px;
+  border-radius: 32px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+}
+
+.jj-contact p {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.jj-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  max-width: 760px;
+  margin: 0 auto 28px;
+}
+
+.jj-contact-grid a {
+  background: #f9fafb;
+  color: #111827;
+  text-decoration: none;
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+}
+
+.jj-contact-grid svg {
+  color: #d4a574;
+  flex-shrink: 0;
+}
+
+.jj-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #25d366;
+  color: white;
+  text-decoration: none;
+  padding: 15px 24px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+@media (max-width: 900px) {
+  .jj-nav-inner {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .jj-logo span {
+    font-size: 1.15rem;
+  }
+
+  .jj-logo small,
+  .jj-actions {
+    display: none;
+  }
+
+  .jj-search {
+    padding: 10px 14px;
+  }
+
+  .jj-hero {
+    min-height: 620px;
+  }
+
+  .jj-hero-img {
+    object-position: 62% center;
+  }
+
+  .jj-hero-overlay {
+    background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.85));
+  }
+
+  .jj-hero-content {
+    margin: 0;
+    padding: 250px 20px 60px;
+    text-align: center;
+  }
+
+  .jj-hero-buttons {
+    flex-direction: column;
+  }
+
+  .jj-trust {
+    grid-template-columns: 1fr;
+    margin-top: -36px;
+  }
+
+  .jj-category-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .jj-product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .jj-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .jj-services {
+    padding: 34px 22px;
+    border-radius: 26px;
+  }
+
+  .jj-contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.jj-hero {
+  position: relative;
+  min-height: 700px;
+  overflow: hidden;
+}
+
+.jj-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(0,0,0,0.92) 0%,
+      rgba(17,24,39,0.82) 45%,
+      rgba(212,165,116,0.20) 100%
+    );
+}
+
+.jj-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.jj-hero-img {
+  object-fit: cover;
+  object-position: center;
+}
