@@ -3581,3 +3581,97 @@ html, body {
   object-fit: cover;
   object-position: center;
 }
+.admin-subtitle {
+  color: #d4a574;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.admin-section-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-section-title p {
+  color: #6b7280;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.badge.gold {
+  background: #fff7ed;
+  color: #b7791f;
+}
+
+.badge.green {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge.red {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.sidebar {
+  background: #111827 !important;
+}
+
+.sidebar h2 {
+  color: #d4a574;
+}
+
+.sidebar a {
+  color: #e5e7eb;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  background: #d4a574;
+  color: #111827;
+}
+
+.btn.light {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.table button {
+  margin-right: 6px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.table button:first-child {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.table button:last-child {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

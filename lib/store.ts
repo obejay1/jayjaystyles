@@ -16,6 +16,60 @@ import {
 import { Product, Order } from './types';
 import { seedProducts } from './seed';
 
+export type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  type: 'product' | 'service' | 'both';
+  image?: string;
+  description?: string;
+  active: boolean;
+  createdAt?: string;
+};
+
+export const defaultCategories: Category[] = [
+  {
+    id: 'hair-extensions-wigs',
+    name: 'Hair Extensions & Wigs',
+    slug: 'hair-extensions-wigs',
+    type: 'product',
+    image: '',
+    description: 'Premium wigs, hair extensions, closures, frontals and hair care products.',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'makeup-skincare',
+    name: 'Makeup & Skincare',
+    slug: 'makeup-skincare',
+    type: 'product',
+    image: '',
+    description: 'Professional makeup, skincare and beauty products.',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'gele-beads',
+    name: 'Gele & Beads',
+    slug: 'gele-beads',
+    type: 'both',
+    image: '',
+    description: 'Gele accessories, coral beads and fashion accessories.',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'kitchen-accessories',
+    name: 'Kitchen Accessories',
+    slug: 'kitchen-accessories',
+    type: 'product',
+    image: '',
+    description: 'Stylish and useful kitchen accessories.',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+];
+
 const cfg = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -32,6 +86,16 @@ const db = app ? getFirestore(app) : null;
 export const money = (n: number) => '₦' + Number(n || 0).toLocaleString('en-NG');
 
 const ls = typeof window !== 'undefined' ? window.localStorage : null;
+
+function createSlug(name: string) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replaceAll(' ', '-')
+    .replace(/[^a-z0-9-]/g, '');
+}
+
+/* PRODUCTS */
 
 export async function getProducts(): Promise<Product[]> {
   if (db) {
@@ -69,6 +133,65 @@ export async function removeProduct(id: string) {
   ls?.setItem('products', JSON.stringify(all.filter((x) => x.id !== id)));
 }
 
+/* CATEGORIES */
+
+export async function getCategories(): Promise<Category[]> {
+  if (db) {
+    const s = await getDocs(collection(db, 'categories'));
+
+    if (s.empty) {
+      await Promise.all(
+        defaultCategories.map((c) => setDoc(doc(db, 'categories', c.id), c))
+      );
+
+      return defaultCategories;
+    }
+
+    return s.docs.map((d) => ({
+      ...(d.data() as Category),
+      id: d.id,
+    }));
+  }
+
+  const saved = ls?.getItem('categories');
+
+  if (saved) return JSON.parse(saved);
+
+  ls?.setItem('categories', JSON.stringify(defaultCategories));
+  return defaultCategories;
+}
+
+export async function saveCategory(category: Category) {
+  const cleanCategory: Category = {
+    ...category,
+    id: category.id || createSlug(category.name) || Date.now().toString(),
+    slug: category.slug || createSlug(category.name),
+    active: Boolean(category.active),
+    createdAt: category.createdAt || new Date().toISOString(),
+  };
+
+  if (db) {
+    return setDoc(doc(db, 'categories', cleanCategory.id), cleanCategory);
+  }
+
+  const all = await getCategories();
+  const next = [
+    cleanCategory,
+    ...all.filter((c) => c.id !== cleanCategory.id),
+  ];
+
+  ls?.setItem('categories', JSON.stringify(next));
+}
+
+export async function removeCategory(id: string) {
+  if (db) return deleteDoc(doc(db, 'categories', id));
+
+  const all = await getCategories();
+  ls?.setItem('categories', JSON.stringify(all.filter((c) => c.id !== id)));
+}
+
+/* CART */
+
 export function getCart() {
   return JSON.parse(ls?.getItem('cart') || '[]') as { id: string; qty: number }[];
 }
@@ -93,6 +216,8 @@ export function addToCart(id: string) {
 
   setCart(c);
 }
+
+/* WISHLIST */
 
 export function getWishlist() {
   try {
@@ -131,6 +256,8 @@ export function toggleWishlist(id: string) {
 export function isInWishlist(id: string) {
   return getWishlist().includes(id);
 }
+
+/* ORDERS */
 
 export async function createOrder(o: Order) {
   if (db) {

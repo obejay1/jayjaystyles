@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PaystackButton } from 'react-paystack';
 import { createOrder, getCart, getProducts, money } from '@/lib/store';
+import { trackEvent } from '@/lib/analytics';
 import { Product } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 
@@ -30,10 +31,11 @@ export default function Checkout() {
             price: p.price,
             qty: c.qty,
             image: p.image,
+            category: p.category,
           }
         : null;
     })
-    .filter(Boolean) as unknown[];
+    .filter(Boolean) as Array<{ id: string; name: string; price: number; qty: number; image?: string; category?: string }>;
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const shipping = subtotal > 0 ? 1500 : 0;
@@ -56,6 +58,19 @@ export default function Checkout() {
       customerAddress: address,
       status: 'Processing',
       createdAt: new Date().toISOString(),
+    });
+
+    trackEvent('purchase', {
+      transaction_id: reference,
+      currency: 'NGN',
+      value: total,
+      items: items.map(item => ({
+        item_id: item.id,
+        item_name: item.name,
+        item_category: item.category || 'Beauty',
+        price: item.price,
+        quantity: item.qty,
+      })),
     });
 
     alert('Payment successful. Order placed!');

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { showToast } from '@/lib/toast';
+import { db } from '@/lib/firebase';
+import { setDoc, doc } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
 
 export default function Register() {
@@ -30,10 +32,11 @@ export default function Register() {
       const users = JSON.parse(localStorage.getItem('jj-users') || '[]');
       
       // Validation: Duplicate email prevention
-      if (users.find((u: any) => u.email.toLowerCase() === email.toLowerCase())) {
-        showToast('Email is already registered. Please log in.', 'error');
-        return;
-      }
+
+        if (users.find((u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase())) {
+          showToast('Email is already registered. Please log in.', 'error');
+          return;
+        }
 
       const newUser = {
         id: Date.now().toString(),
@@ -48,8 +51,30 @@ export default function Register() {
       users.push(newUser);
       localStorage.setItem('jj-users', JSON.stringify(users));
 
+      // Also persist user to Firebase (if configured)
+      try {
+        if (db) {
+          await setDoc(doc(db, 'users', newUser.id), {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            phone: newUser.phone,
+            joined: new Date().toISOString(),
+          });
+        }
+      } catch {
+        // ignore firestore errors in client
+      }
+
       // Sign user into active session directly after registering
-      const { password: _, ...sessionUser } = newUser;
+        const sessionUser = {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          phone: newUser.phone,
+          joined: newUser.joined,
+        };
+
       localStorage.setItem('jj-user', JSON.stringify(sessionUser));
 
       showToast('Account created successfully!', 'success');

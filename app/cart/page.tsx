@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Trash2, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getCart, setCart, getProducts } from '@/lib/store';
+import { trackEvent } from '@/lib/analytics';
 import { Product } from '@/lib/types';
 
 export default function Cart() {
@@ -28,6 +29,22 @@ export default function Cart() {
 
   const removeFromCart = (id: string) => {
     setCart(cartItems.filter(item => item.id !== id));
+  };
+
+  const handleProceedToCheckout = () => {
+    if (!cartDetails.length) return;
+    trackEvent('begin_checkout', {
+      currency: 'NGN',
+      value: cartTotal,
+      items: cartDetails.map(item => ({
+        item_id: item.id,
+        item_name: item.name,
+        item_category: item.category || 'Beauty',
+        price: item.price,
+        quantity: item.quantity,
+      })),
+    });
+    router.push('/checkout');
   };
 
   const cartDetails = cartItems
@@ -129,7 +146,7 @@ export default function Cart() {
           <button 
             className="checkout-pay-btn-pro" 
             disabled={cartDetails.length === 0}
-            onClick={() => router.push('/checkout')}
+            onClick={handleProceedToCheckout}
           >
             Proceed to Checkout
           </button>

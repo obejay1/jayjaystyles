@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ShoppingCart, User, Heart, ShieldCheck, Truck, RotateCcw, ArrowLeft } from 'lucide-react';
 import { getProducts, addToCart, toggleWishlist, isInWishlist, getCart, money } from '@/lib/store';
 import { showToast } from '@/lib/toast';
+import { trackEvent } from '@/lib/analytics';
 import { Product } from '@/lib/types';
 import Loading from '@/components/Loading';
 import ProductCard from '@/components/ProductCard';
@@ -38,6 +39,22 @@ export default function ProductDetail() {
         setProduct(found);
         setActiveImage(found.image || '');
         setLiked(isInWishlist(found.id));
+          trackEvent('view_item', {
+            item_id: found.id,
+            item_name: found.name,
+            item_category: found.category || 'Beauty',
+            value: found.price,
+            currency: 'NGN',
+            items: [
+              {
+                item_id: found.id,
+                item_name: found.name,
+                item_category: found.category || 'Beauty',
+                price: found.price,
+                quantity: 1,
+              },
+            ],
+          });
         
         // Find related products (same category, exclude current)
         const rel = products.filter(p => p.category === found.category && p.id !== found.id).slice(0, 4);
@@ -77,12 +94,34 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     addToCart(product.id);
+    trackEvent('add_to_cart', {
+      currency: 'NGN',
+      value: product.price,
+      item_name: product.name,
+      item_category: product.category || 'Beauty',
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_category: product.category || 'Beauty',
+          price: product.price,
+          quantity: 1,
+        },
+      ],
+    });
     showToast('Added to cart!', 'success');
   };
 
   const handleWishlist = () => {
     toggleWishlist(product.id);
     setLiked(!liked);
+    trackEvent(liked ? 'remove_from_wishlist' : 'add_to_wishlist', {
+      item_id: product.id,
+      item_name: product.name,
+      item_category: product.category || 'Beauty',
+      value: product.price,
+      currency: 'NGN',
+    });
     if (!liked) {
       showToast('Added to wishlist!', 'success');
     } else {

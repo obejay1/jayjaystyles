@@ -18,11 +18,24 @@ export async function getBookings(): Promise<Booking[]> {
   return data ? JSON.parse(data) : [];
 }
 
+import { db } from './firebase';
+import { setDoc, doc } from 'firebase/firestore';
+
 export async function saveBooking(booking: Omit<Booking, 'id'>): Promise<Booking> {
   const all = await getBookings();
   const newBooking = { ...booking, id: Date.now().toString() };
   all.push(newBooking);
   localStorage.setItem('jj-bookings', JSON.stringify(all));
+
+  // persist to Firestore when available
+  try {
+    if (db) {
+      await setDoc(doc(db, 'bookings', newBooking.id), newBooking);
+    }
+  } catch {
+    // ignore firestore errors on client
+  }
+
   return newBooking;
 }
 

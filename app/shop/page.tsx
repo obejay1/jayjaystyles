@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, ShoppingCart, User, Heart } from 'lucide-react';
-import { getProducts, getWishlist, getCart } from '@/lib/store';
+import { ShoppingCart, User } from 'lucide-react';
+import { getProducts, getCart } from '@/lib/store';
 import { Product } from '@/lib/types';
 import ProductCard from '@/components/ProductCard';
+import { trackEvent } from '@/lib/analytics';
 import Loading from '@/components/Loading';
 import Footer from '@/components/Footer';
 
@@ -14,7 +15,6 @@ export default function Shop() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
-  const [wishlist, setWishlist] = useState<string[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [search, setSearch] = useState('');
 
@@ -22,20 +22,31 @@ export default function Shop() {
     getProducts().then(res => {
       setProducts(res.filter(p => p.type === 'product'));
       setLoading(false);
+      try {
+        const list = res.filter(p => p.type === 'product');
+        trackEvent('view_item_list', {
+          item_list_name: 'Products',
+          items: list.map((p, i) => ({
+            item_id: p.id,
+            item_name: p.name,
+            item_category: p.category || 'Beauty',
+            price: p.price,
+            index: i + 1,
+          })),
+        });
+      } catch {
+        // analytics should never break the page
+      }
     });
     
-    setWishlist(getWishlist());
     const updateCount = () => {
       const c = getCart();
       setCartCount(c.reduce((sum, item) => sum + item.qty, 0));
     };
     updateCount();
     
-    const onWishlist = () => setWishlist(getWishlist());
-    window.addEventListener('wishlist', onWishlist);
     window.addEventListener('cart', updateCount);
     return () => {
-      window.removeEventListener('wishlist', onWishlist);
       window.removeEventListener('cart', updateCount);
     };
   }, []);

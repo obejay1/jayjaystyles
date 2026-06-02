@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { showToast } from '@/lib/toast';
+import { db } from '@/lib/firebase';
+import { addDoc, collection, setDoc, doc } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
 
 export default function Login() {
@@ -27,12 +29,37 @@ export default function Login() {
     setTimeout(() => {
       setLoading(false);
       const users = JSON.parse(localStorage.getItem('jj-users') || '[]');
-      const user = users.find((u: any) => u.email === email && u.password === password);
+      const user = users.find((u: { email?: string; password?: string }) => u.email === email && u.password === password);
 
       if (user) {
-        // Exclude password from the active session cookie
-        const { password: _, ...sessionUser } = user;
+        // Build a safe session user object (exclude password)
+        const sessionUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          joined: user.joined,
+        };
+
         localStorage.setItem('jj-user', JSON.stringify(sessionUser));
+        try {
+          if (db) {
+            // log the login event
+            await addDoc(collection(db, 'logins'), {
+              userId: sessionUser.id,
+              email: sessionUser.email,
+              ts: new Date().toISOString(),
+            });
+
+            // ensure user doc exists / update lastSeen
+            await setDoc(doc(db, 'users', sessionUser.id), {
+              ...sessionUser,
+              lastSeen: new Date().toISOString(),
+            }, { merge: true });
+          }
+        } catch {
+          // ignore firestore errors on client
+        }
         showToast('Successfully logged in!', 'success');
         router.push('/account');
       } else {
@@ -71,7 +98,7 @@ export default function Login() {
         </form>
         
         <p style={{ textAlign: 'center', marginTop: '24px', color: '#64748b', fontSize: '14px' }}>
-          Don't have an account? <Link href="/register" style={{ color: '#111827', fontWeight: 700, textDecoration: 'none' }}>Register here</Link>
+          Don&apos;t have an account? <Link href="/register" style={{ color: '#111827', fontWeight: 700, textDecoration: 'none' }}>Register here</Link>
         </p>
       </div>
     </div>
