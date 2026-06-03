@@ -16,6 +16,7 @@ import {
   Booking,
 } from '@/lib/bookings';
 import { getCoupons, saveCoupon, removeCoupon, Coupon } from '@/lib/coupons';
+import { getCheckoutSettings, saveCheckoutSettings } from '@/lib/settings';
 import { Product, Order } from '@/lib/types';
 import { showToast } from '@/lib/toast';
 
@@ -112,11 +113,22 @@ export default function Admin() {
     active: true,
   });
 
+  const [checkoutTaxRate, setCheckoutTaxRate] = useState<number>(7.5);
+  const [checkoutShippingFee, setCheckoutShippingFee] = useState<number>(1500);
+
   async function load() {
     setProducts(await getProducts());
     setOrders(await getOrders());
     setBookings(await getBookings());
     setCoupons(await getCoupons());
+
+    try {
+      const s = await getCheckoutSettings();
+      setCheckoutTaxRate(s.taxRate);
+      setCheckoutShippingFee(s.shippingFee);
+    } catch {
+      /* ignore */
+    }
 
     const saved = localStorage.getItem('jj-categories');
     if (saved) {
@@ -239,7 +251,7 @@ export default function Admin() {
           <div className="admin-login-brand">
             <img src="/logo.png" alt="JayJayStyles" />
             <h1>JayJayStyles</h1>
-            <p>Luxury Beauty, Fashion & Lifestyle Store</p>
+            <p>Luxury Beauty, Fashion &amp; Lifestyle Store</p>
           </div>
 
           <div className="admin-login-content">
@@ -277,7 +289,7 @@ export default function Admin() {
         <p className="admin-subtitle">Admin Dashboard</p>
 
         <a href="#dashboard">🏠 Dashboard</a>
-        <a href="#products">📦 Products & Services</a>
+        <a href="#products">📦 Products &amp; Services</a>
         <a href="#categories">🗂 Categories</a>
         <a href="#orders">🛒 Orders</a>
         <a href="#bookings">📅 Bookings</a>
@@ -315,6 +327,51 @@ export default function Admin() {
             <h1>{orders.length}</h1>
           </div>
         </div>
+
+        <section className="table-card" style={{ maxWidth: 520 }}>
+          <div className="admin-section-title">
+            <div>
+              <h2>Checkout Settings</h2>
+              <p>Tax percentage and shipping fee for checkout calculations.</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <select
+              className="input"
+              value={String(checkoutTaxRate)}
+              onChange={(e) => setCheckoutTaxRate(Number(e.target.value))}
+              style={{ width: 180 }}
+            >
+              <option value="0">0%</option>
+              <option value="5">5%</option>
+              <option value="7.5">7.5%</option>
+              <option value="10">10%</option>
+            </select>
+
+            <input
+              className="input"
+              type="number"
+              placeholder="Shipping fee (e.g. 1500)"
+              value={checkoutShippingFee}
+              onChange={(e) => setCheckoutShippingFee(Number(e.target.value))}
+              style={{ width: 220 }}
+            />
+
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <button
+                className="btn"
+                onClick={async () => {
+                  const payload = { taxRate: Number(checkoutTaxRate), shippingFee: Number(checkoutShippingFee) };
+                  await saveCheckoutSettings(payload);
+                  showToast('Checkout settings updated successfully');
+                }}
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </section>
 
         <section className="table-card category-card" id="categories">
           <div className="admin-section-title">
@@ -449,7 +506,7 @@ export default function Admin() {
 
             <tbody>
               {categories.map((c) => (
-                <tr key={c.id}>
+                <tr key={String(c.id)}>
                   <td>
                     {c.image ? (
                       <img
@@ -511,7 +568,7 @@ export default function Admin() {
               {categories
                 .filter((c) => c.active)
                 .map((cat) => (
-                  <option key={cat.id} value={cat.name}>
+                  <option key={String(cat.id)} value={cat.name}>
                     {cat.name}
                   </option>
                 ))}
@@ -520,7 +577,7 @@ export default function Admin() {
             <select
               className="input"
               value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value as any })}
+              onChange={(e) => setForm({ ...form, type: e.target.value as 'product' | 'service' })}
             >
               <option value="product">Product</option>
               <option value="service">Service</option>
@@ -608,7 +665,7 @@ export default function Admin() {
 
             <tbody>
               {products.map((p) => (
-                <tr key={p.id}>
+                <tr key={String(p.id)}>
                   <td>{p.name}</td>
                   <td>{p.type}</td>
                   <td>{p.category}</td>
@@ -649,7 +706,7 @@ export default function Admin() {
 
             <tbody>
               {orders.map((o) => (
-                <tr key={o.id}>
+                <tr key={String(o.id)}>
                   <td>#{o.id}</td>
                   <td>{o.status || 'Processing'}</td>
                   <td>{money(Number(o.total || 0))}</td>
@@ -691,7 +748,7 @@ export default function Admin() {
                 </tr>
               ) : (
                 bookings.map((b) => (
-                  <tr key={b.id}>
+                  <tr key={String(b.id)}>
                     <td>#{b.id}</td>
                     <td>{b.serviceName}</td>
                     <td>{b.customerName}</td>
@@ -764,13 +821,21 @@ export default function Admin() {
 
             <tbody>
               {coupons.map((c) => (
-                <tr key={c.id}>
+                <tr key={String(c.id)}>
                   <td>{c.code}</td>
                   <td>{c.discount}</td>
                   <td>{money(Number(c.minOrder || 0))}</td>
                   <td>{c.expiryDate}</td>
                   <td>
-                    <button onClick={() => setCouponForm(c as any)}>Edit</button>
+                    <button onClick={() => setCouponForm({
+                      id: c.id,
+                      code: c.code,
+                      discount: c.discount,
+                      type: c.type || 'percentage',
+                      minOrder: c.minOrder || 0,
+                      expiryDate: c.expiryDate || '',
+                      active: c.active ?? true,
+                    })}>Edit</button>
                     <button onClick={async () => { await removeCoupon(c.id); load(); }}>Delete</button>
                   </td>
                 </tr>

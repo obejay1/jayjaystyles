@@ -7,14 +7,14 @@ import { User, Package, Heart, Settings, LogOut, ArrowRight } from 'lucide-react
 import { useRouter } from 'next/navigation';
 import { getOrders, getWishlist, getProducts, toggleWishlist } from '@/lib/store';
 import { showToast } from '@/lib/toast';
-import { Product } from '@/lib/types';
+import { Order, Product } from '@/lib/types';
 import Footer from '@/components/Footer';
 import Loading from '@/components/Loading';
 
 export default function Account() {
   const [activeTab, setActiveTab] = useState('profile');
   const router = useRouter();
-  const [orders, setOrders] = useState<Array<Record<string, unknown>>>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -72,9 +72,9 @@ export default function Account() {
 
       <div className="account-hero" style={{ background: '#111827', color: 'white', padding: '60px 20px 80px', textAlign: 'center' }}>
         <div style={{ width: '80px', height: '80px', background: '#d4af37', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold', color: '#111', margin: '0 auto 16px' }}>
-          {user.name.charAt(0)}
+          {(user.name || '').charAt(0)}
         </div>
-        <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Welcome back, {user.name.split(' ')[0]}</h1>
+        <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Welcome back, {(user.name || '').split(' ')[0]}</h1>
         <p style={{ color: '#9ca3af' }}>Manage your account, orders, and preferences.</p>
       </div>
 
@@ -93,7 +93,7 @@ export default function Account() {
               onClick={() => setActiveTab('orders')}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '14px 16px', borderRadius: '12px', border: 'none', background: activeTab === 'orders' ? '#f3f4f6' : 'transparent', color: activeTab === 'orders' ? '#111' : '#64748b', fontWeight: activeTab === 'orders' ? 700 : 500, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}
             >
-              <Package size={18} /> Orders & Bookings
+              <Package size={18} /> Orders &amp; Bookings
             </button>
             <button 
               onClick={() => setActiveTab('wishlist')}
@@ -161,10 +161,10 @@ export default function Account() {
                   </div>
                 ) : (
                   orders.map(order => (
-                    <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '14px' }}>
+                    <div key={String(order.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '14px' }}>
                       <div>
                         <span style={{ display: 'inline-block', background: order.status === 'Delivered' ? '#dcfce7' : '#fef3c7', color: order.status === 'Delivered' ? '#166534' : '#92400e', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, marginBottom: '8px' }}>{order.status || 'Processing'}</span>
-                        <h3 style={{ margin: 0, fontSize: '16px' }}>Order #{order.id.slice(-6)}</h3>
+                        <h3 style={{ margin: 0, fontSize: '16px' }}>Order #{String(order.id).slice(-6)}</h3>
                         <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div style={{ textAlign: 'right' }}>
@@ -195,7 +195,7 @@ export default function Account() {
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                   {wishlistItems.map(item => (
-                    <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px' }}>
+                    <div key={String(item.id)} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px' }}>
                       <img src={item.image || `https://placehold.co/400x400/f5f5f5/333?text=${encodeURIComponent(item.name)}`} alt={item.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }} />
                       <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h4>
                       <p style={{ margin: '0 0 12px 0', fontWeight: 'bold' }}>₦{item.price?.toLocaleString()}</p>

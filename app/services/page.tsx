@@ -208,9 +208,9 @@ export default function Services() {
             <div className="success-card-pro w-full max-w-full mx-4 sm:mx-auto">
               <div className="success-icon">✅</div>
               <h2>Booking Confirmed!</h2>
-              <p>We've sent a confirmation email to {form.email}.</p>
+              <p>We&apos;ve sent a confirmation email to {form.email}.</p>
               <p style={{ color: '#888', fontSize: 14, marginTop: 8 }}>
-                We'll contact you at {form.phone} if anything changes.
+                We&apos;ll contact you at {form.phone} if anything changes.
               </p>
               <button className="btn-submit-pro" onClick={() => { setSelectedService(null); setSubmitted(false); }}>
                 Book Another Service

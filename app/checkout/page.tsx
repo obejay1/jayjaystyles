@@ -1,28 +1,42 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PaystackButton } from 'react-paystack';
+import dynamic from 'next/dynamic';
 import { createOrder, getCart, getProducts, money } from '@/lib/store';
 import { trackEvent } from '@/lib/analytics';
+import { getCheckoutSettings } from '@/lib/settings';
 import { Product } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { showToast } from '@/lib/toast';
+
+const PaystackButton = dynamic(() => import('react-paystack').then((mod) => mod.PaystackButton), {
+  ssr: false,
+});
 
 export default function Checkout() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [cart, setCart] = useState<{ id: string; qty: number }[]>([]);
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
+  const [taxRate, setTaxRate] = useState(7.5);
+  const [shippingFee, setShippingFee] = useState(1500);
 
   const r = useRouter();
 
   useEffect(() => {
+    setMounted(true);
+    setCart(getCart());
     getProducts().then(setProducts);
+    getCheckoutSettings().then((s) => {
+      setTaxRate(s.taxRate ?? 7.5);
+      setShippingFee(s.shippingFee ?? 1500);
+    });
   }, []);
-
-  const cart = getCart();
 
   const items = cart
     .map((c) => {
@@ -41,17 +55,23 @@ export default function Checkout() {
     .filter(Boolean) as Array<{ id: string; name: string; price: number; qty: number; image?: string; category?: string }>;
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const shipping = subtotal > 0 ? 1500 : 0;
-  const tax = Math.round(subtotal * 0.075);
+  const shipping = subtotal > 0 ? shippingFee : 0;
+  const tax = Math.round(subtotal * (taxRate / 100));
   const discountAmount = Math.round((subtotal * discount) / 100);
   const total = subtotal + shipping + tax - discountAmount;
 
   function applyCoupon() {
     if (couponCode.trim().toUpperCase() === 'WELCOME10') {
       setDiscount(10);
-      alert('Coupon applied! 10% off your order.');
+     showToast(
+  `Coupon applied successfully! You saved ₦${discount.toLocaleString()}`,
+  'success'
+);
     } else {
-      alert('Invalid coupon code.');
+      showToast(
+  'Invalid coupon code. Please try again.',
+  'error'
+);
     }
   }
 
@@ -63,6 +83,9 @@ export default function Checkout() {
       shipping,
       tax,
       total,
+      taxRate,
+      shippingFee,
+      discountAmount,
       paymentMethod: 'Paystack',
       paymentReference: reference,
       customerEmail: email,
@@ -86,7 +109,9 @@ export default function Checkout() {
       })),
     });
 
-    alert('Payment successful. Order placed!');
+    if (typeof window !== 'undefined') {
+      alert('Payment successful. Order placed!');
+    }
     r.push('/account');
   }
 
@@ -104,7 +129,11 @@ export default function Checkout() {
     text: `Pay ${money(total)}`,
     onSuccess: (response: unknown) =>
       saveOrder((response as { reference: string }).reference),
-    onClose: () => alert('Payment cancelled'),
+    onClose: () => {
+      if (typeof window !== 'undefined') {
+        alert('Payment cancelled');
+      }
+    },
   };
 
   return (
@@ -172,7 +201,7 @@ export default function Checkout() {
             ) : (
               <div className="checkout-items-pro">
                 {items.map((item) => (
-                  <div className="checkout-item-pro" key={item.id}>
+                  <div className="checkout-item-pro" key={String(item.id)}>
                     <img src={item.image} alt={item.name} />
 
                     <div>
@@ -209,7 +238,7 @@ export default function Checkout() {
 
           {discount > 0 && (
             <div className="checkout-summary-line">
-              <span>Discount ({discount}%)</span>
+              <span>Discount</span>
               <strong style={{ color: '#16a34a' }}>
                 -{money(discountAmount)}
               </strong>
@@ -217,13 +246,13 @@ export default function Checkout() {
           )}
 
           <div className="checkout-summary-line">
-            <span>Shipping</span>
-            <strong>{money(shipping)}</strong>
+            <span>Tax ({taxRate}%)</span>
+            <strong>{money(tax)}</strong>
           </div>
 
           <div className="checkout-summary-line">
-            <span>Tax</span>
-            <strong>{money(tax)}</strong>
+            <span>Shipping</span>
+            <strong>{money(shipping)}</strong>
           </div>
 
           <div className="checkout-summary-total">
@@ -231,7 +260,7 @@ export default function Checkout() {
             <strong>{money(total)}</strong>
           </div>
 
-          {canPay ? (
+          {mounted && canPay ? (
             <PaystackButton
               className="checkout-pay-btn-pro"
               {...paystackConfig}
