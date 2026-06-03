@@ -17,6 +17,7 @@ import {
 } from '@/lib/bookings';
 import { getCoupons, saveCoupon, removeCoupon, Coupon } from '@/lib/coupons';
 import { Product, Order } from '@/lib/types';
+import { showToast } from '@/lib/toast';
 
 type Category = {
   id: string;
@@ -144,8 +145,25 @@ export default function Admin() {
     };
 
     await saveProduct(p);
+    showToast('✅ Product saved successfully!');
     setForm(blankProduct);
     load();
+  }
+
+  function uploadCategoryImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      setCategoryForm((prev) => ({
+        ...prev,
+        image: reader.result as string,
+      }));
+    };
+
+    reader.readAsDataURL(file);
   }
 
   function submitCategory() {
@@ -216,25 +234,37 @@ export default function Admin() {
 
   if (!ok) {
     return (
-      <main className="admin-shell">
-        <h1>JayJayStyles Admin</h1>
+      <main className="admin-login-page">
+        <div className="admin-login-card">
+          <div className="admin-login-brand">
+            <img src="/logo.png" alt="JayJayStyles" />
+            <h1>JayJayStyles</h1>
+            <p>Luxury Beauty, Fashion & Lifestyle Store</p>
+          </div>
 
-        <div className="card" style={{ maxWidth: 420 }}>
-          <p>Enter admin PIN</p>
+          <div className="admin-login-content">
+            <h2>Admin Dashboard</h2>
+            <p>
+              Manage products, services, categories, orders, bookings, customers and coupons.
+            </p>
 
-          <input
-            className="input"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            type="password"
-          />
+            <input
+              className="admin-pin-input"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              type="password"
+              placeholder="Enter Admin PIN"
+            />
 
-          <button
-            className="btn"
-            onClick={() => setOk(pin === (process.env.NEXT_PUBLIC_ADMIN_PIN || '1234'))}
-          >
-            Login
-          </button>
+            <button
+              className="admin-login-btn"
+              onClick={() =>
+                setOk(pin === (process.env.NEXT_PUBLIC_ADMIN_PIN || '1234'))
+              }
+            >
+              Login to Dashboard
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -286,7 +316,7 @@ export default function Admin() {
           </div>
         </div>
 
-        <section className="table-card" id="categories">
+        <section className="table-card category-card" id="categories">
           <div className="admin-section-title">
             <div>
               <h2>Add / Edit Category</h2>
@@ -342,14 +372,18 @@ export default function Admin() {
               <option value="inactive">Inactive</option>
             </select>
 
-            <input
-              className="input"
-              placeholder="Image URL"
-              value={categoryForm.image}
-              onChange={(e) =>
-                setCategoryForm({ ...categoryForm, image: e.target.value })
-              }
-            />
+            <div className="category-upload-box">
+              <label>Category Image</label>
+              <input type="file" accept="image/*" onChange={uploadCategoryImage} />
+
+              {categoryForm.image && (
+                <img
+                  src={categoryForm.image}
+                  alt="Category Preview"
+                  className="category-preview"
+                />
+              )}
+            </div>
 
             <textarea
               className="input"
@@ -492,12 +526,37 @@ export default function Admin() {
               <option value="service">Service</option>
             </select>
 
-            <input
-              className="input"
-              placeholder="Image URL"
-              value={form.image}
-              onChange={(e) => setForm({ ...form, image: e.target.value })}
-            />
+            <div className="product-upload-box">
+  <label>Product Image</label>
+
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        setForm({
+          ...form,
+          image: reader.result as string,
+        });
+      };
+
+      reader.readAsDataURL(file);
+    }}
+  />
+
+  {form.image && (
+    <img
+      src={form.image}
+      alt="Preview"
+      className="product-preview"
+    />
+  )}
+</div>
 
             <input
               className="input"

@@ -13,6 +13,9 @@ export default function Checkout() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+
   const r = useRouter();
 
   useEffect(() => {
@@ -40,7 +43,17 @@ export default function Checkout() {
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const shipping = subtotal > 0 ? 1500 : 0;
   const tax = Math.round(subtotal * 0.075);
-  const total = subtotal + shipping + tax;
+  const discountAmount = Math.round((subtotal * discount) / 100);
+  const total = subtotal + shipping + tax - discountAmount;
+
+  function applyCoupon() {
+    if (couponCode.trim().toUpperCase() === 'WELCOME10') {
+      setDiscount(10);
+      alert('Coupon applied! 10% off your order.');
+    } else {
+      alert('Invalid coupon code.');
+    }
+  }
 
   async function saveOrder(reference: string) {
     await createOrder({
@@ -64,7 +77,7 @@ export default function Checkout() {
       transaction_id: reference,
       currency: 'NGN',
       value: total,
-      items: items.map(item => ({
+      items: items.map((item) => ({
         item_id: item.id,
         item_name: item.name,
         item_category: item.category || 'Beauty',
@@ -89,7 +102,8 @@ export default function Checkout() {
     amount: total * 100,
     publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
     text: `Pay ${money(total)}`,
-    onSuccess: (response: unknown) => saveOrder((response as { reference: string }).reference),
+    onSuccess: (response: unknown) =>
+      saveOrder((response as { reference: string }).reference),
     onClose: () => alert('Payment cancelled'),
   };
 
@@ -99,7 +113,9 @@ export default function Checkout() {
         <div>
           <p>Secure Checkout</p>
           <h1>Complete Your Order</h1>
-          <span>Pay safely with Paystack — card, transfer, USSD and bank options.</span>
+          <span>
+            Pay safely with Paystack — card, transfer, USSD and bank options.
+          </span>
         </div>
       </section>
 
@@ -175,10 +191,30 @@ export default function Checkout() {
         <aside className="checkout-summary-pro">
           <h2>Order Summary</h2>
 
+          <div className="coupon-box-pro">
+            <input
+              placeholder="Enter coupon code"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+            />
+            <button type="button" onClick={applyCoupon}>
+              Apply
+            </button>
+          </div>
+
           <div className="checkout-summary-line">
             <span>Subtotal</span>
             <strong>{money(subtotal)}</strong>
           </div>
+
+          {discount > 0 && (
+            <div className="checkout-summary-line">
+              <span>Discount ({discount}%)</span>
+              <strong style={{ color: '#16a34a' }}>
+                -{money(discountAmount)}
+              </strong>
+            </div>
+          )}
 
           <div className="checkout-summary-line">
             <span>Shipping</span>
@@ -196,7 +232,10 @@ export default function Checkout() {
           </div>
 
           {canPay ? (
-            <PaystackButton className="checkout-pay-btn-pro" {...paystackConfig} />
+            <PaystackButton
+              className="checkout-pay-btn-pro"
+              {...paystackConfig}
+            />
           ) : (
             <button className="checkout-pay-btn-pro" disabled>
               Fill all details to pay

@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { showToast } from '@/lib/toast';
 import { db } from '@/lib/firebase';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, addDoc, collection } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
 
 export default function Register() {
   const router = useRouter();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -17,7 +18,6 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Redirect to account if already logged in
     if (localStorage.getItem('jj-user')) {
       router.replace('/account');
     }
@@ -27,16 +27,20 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setLoading(false);
-      const users = JSON.parse(localStorage.getItem('jj-users') || '[]');
-      
-      // Validation: Duplicate email prevention
 
-        if (users.find((u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase())) {
-          showToast('Email is already registered. Please log in.', 'error');
-          return;
-        }
+      const users = JSON.parse(localStorage.getItem('jj-users') || '[]');
+
+      const existingUser = users.find(
+        (u: { email?: string }) =>
+          u.email?.toLowerCase() === email.toLowerCase()
+      );
+
+      if (existingUser) {
+        showToast('Email is already registered. Please log in.', 'error');
+        return;
+      }
 
       const newUser = {
         id: Date.now().toString(),
@@ -44,38 +48,49 @@ export default function Register() {
         email,
         phone,
         password,
-        joined: new Date().toLocaleDateString()
+        joined: new Date().toISOString(),
       };
 
-      // Save to standard simulated db
       users.push(newUser);
       localStorage.setItem('jj-users', JSON.stringify(users));
 
-      // Also persist user to Firebase (if configured)
+      const sessionUser = {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        joined: newUser.joined,
+      };
+
+      localStorage.setItem('jj-user', JSON.stringify(sessionUser));
+
       try {
         if (db) {
-          await setDoc(doc(db, 'users', newUser.id), {
-            id: newUser.id,
+          await setDoc(
+            doc(db, 'users', newUser.id),
+            {
+              id: newUser.id,
+              name: newUser.name,
+              email: newUser.email,
+              phone: newUser.phone,
+              joined: newUser.joined,
+              createdAt: new Date().toISOString(),
+              lastSeen: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+
+          await addDoc(collection(db, 'registrations'), {
+            userId: newUser.id,
             name: newUser.name,
             email: newUser.email,
             phone: newUser.phone,
-            joined: new Date().toISOString(),
+            registeredAt: new Date().toISOString(),
           });
         }
-      } catch {
-        // ignore firestore errors in client
+      } catch (error) {
+        console.log('Firebase registration failed:', error);
       }
-
-      // Sign user into active session directly after registering
-        const sessionUser = {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          phone: newUser.phone,
-          joined: newUser.joined,
-        };
-
-      localStorage.setItem('jj-user', JSON.stringify(sessionUser));
 
       showToast('Account created successfully!', 'success');
       router.push('/account');
@@ -83,38 +98,134 @@ export default function Register() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ background: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', width: '100%', maxWidth: '450px' }}>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#64748b', textDecoration: 'none', marginBottom: '24px', fontWeight: 600 }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#f8fafc',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <div
+        style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '24px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+          width: '100%',
+          maxWidth: '450px',
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#64748b',
+            textDecoration: 'none',
+            marginBottom: '24px',
+            fontWeight: 600,
+          }}
+        >
           <ArrowLeft size={16} /> Back to Home
         </Link>
-        <h1 style={{ fontSize: '28px', marginBottom: '8px', color: '#111827' }}>Create an Account</h1>
-        <p style={{ color: '#64748b', marginBottom: '24px' }}>Join us to easily manage your orders, bookings, and wishlist.</p>
-        
-        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+        <h1 style={{ fontSize: '28px', marginBottom: '8px', color: '#111827' }}>
+          Create an Account
+        </h1>
+
+        <p style={{ color: '#64748b', marginBottom: '24px' }}>
+          Join us to easily manage your orders, bookings, and wishlist.
+        </p>
+
+        <form
+          onSubmit={handleRegister}
+          style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+        >
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>Full Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }} placeholder="e.g. Jane Doe" />
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+              placeholder="e.g. Jane Doe"
+            />
           </div>
+
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>Email Address</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }} placeholder="Enter your email" />
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+              placeholder="Enter your email"
+            />
           </div>
+
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>Phone Number</label>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }} placeholder="Enter your phone number" />
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+              placeholder="Enter your phone number"
+            />
           </div>
+
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }} placeholder="Create a password (min 6 chars)" />
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px', color: '#475569' }}>
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none' }}
+              placeholder="Create a password (min 6 chars)"
+            />
           </div>
-          <button type="submit" disabled={loading} style={{ background: '#111827', color: 'white', padding: '16px', borderRadius: '12px', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '8px', opacity: loading ? 0.8 : 1 }}>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              background: '#111827',
+              color: 'white',
+              padding: '16px',
+              borderRadius: '12px',
+              fontWeight: 700,
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '8px',
+              opacity: loading ? 0.8 : 1,
+            }}
+          >
             {loading ? 'Creating Account...' : 'Register'}
           </button>
         </form>
-        
+
         <p style={{ textAlign: 'center', marginTop: '24px', color: '#64748b', fontSize: '14px' }}>
-          Already have an account? <Link href="/login" style={{ color: '#111827', fontWeight: 700, textDecoration: 'none' }}>Sign In here</Link>
+          Already have an account?{' '}
+          <Link href="/login" style={{ color: '#111827', fontWeight: 700, textDecoration: 'none' }}>
+            Sign In here
+          </Link>
         </p>
       </div>
     </div>

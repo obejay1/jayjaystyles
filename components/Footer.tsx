@@ -4,57 +4,6 @@ import { Phone, Mail } from 'lucide-react';
 export default function Footer() {
   return (
     <footer className="global-footer-pro">
-      <style>{`
-        .global-footer-pro {
-          background: #111827;
-          color: white;
-          padding: 60px 20px 20px;
-          margin-top: 60px;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        .global-footer-grid {
-          max-width: 1200px;
-          margin: 0 auto 40px;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 40px;
-        }
-        .global-footer-brand h3 { font-size: 1.5rem; font-weight: 800; margin: 0 0 16px 0; color: white; }
-        .global-footer-brand p { color: #9ca3af; line-height: 1.6; margin: 0; }
-        .global-footer-links h4 { font-size: 1.125rem; margin: 0 0 20px 0; color: white; }
-        .global-footer-links ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
-        .global-footer-links a { color: #9ca3af; text-decoration: none; transition: color 0.2s; }
-        .global-footer-links a:hover { color: #d4a574; }
-        .global-footer-bottom {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding-top: 20px;
-          border-top: 1px solid #1f2937;
-          text-align: center;
-          color: #9ca3af;
-          font-size: 0.875rem;
-        }
-        .contact-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          color: #9ca3af;
-          margin-bottom: 16px;
-        }
-        .contact-item a {
-          color: #9ca3af;
-          text-decoration: none;
-          transition: color 0.2s;
-          line-height: 1.6;
-        }
-        .contact-item a:hover {
-          color: #d4a574;
-        }
-        .contact-icon {
-          color: #d4a574;
-          margin-top: 2px;
-        }
-      `}</style>
       <div className="global-footer-grid">
         <div className="global-footer-brand">
           <h3>✨ JayJayStyles</h3>

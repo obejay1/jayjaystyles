@@ -11,9 +11,10 @@ import {
   query,
   orderBy,
   updateDoc,
+  addDoc,
 } from 'firebase/firestore';
 
-import { Product, Order } from './types';
+import { Product, Order, Session } from './types';
 import { seedProducts } from './seed';
 
 export type Category = {
@@ -204,6 +205,24 @@ export function setCart(c: { id: string; qty: number }[]) {
   }
 }
 
+export async function getUserSessions(): Promise<Session[]> {
+  if (!db) return [];
+
+  try {
+    const s = await getDocs(
+      query(collection(db, 'sessions'), orderBy('loginAt', 'desc'))
+    );
+
+    return s.docs.map((d) => ({
+      ...d.data(),
+      id: d.id,
+    })) as Session[];
+  } catch (error) {
+    console.error('Failed to fetch user sessions:', error);
+    return [];
+  }
+}
+
 export function addToCart(id: string) {
   const c = getCart();
   const found = c.find((i) => i.id === id);
@@ -289,4 +308,21 @@ export async function updateOrderStatus(id: string, status: string) {
   if (!db) return;
 
   await updateDoc(doc(db, 'orders', id), { status });
+}
+
+/* SESSIONS */
+
+export async function logUserSession(userId: string, email: string | null) {
+  if (!db) return;
+
+  try {
+    await addDoc(collection(db, 'sessions'), {
+      userId,
+      email: email || 'unknown',
+      loginAt: new Date().toISOString(),
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
+    });
+  } catch (error) {
+    console.error('Failed to log user session:', error);
+  }
 }

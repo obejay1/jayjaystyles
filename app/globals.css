@@ -3675,3 +3675,239 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===============================
+   GLOBAL FOOTER PRO
+================================ */
+.global-footer-pro {
+  background: #111827;
+  color: #ffffff;
+  padding: 60px 24px 40px;
+}
+
+.global-footer-grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 40px;
+}
+
+.global-footer-brand h3 {
+  color: #ffffff;
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.global-footer-brand p {
+  color: #d1d5db;
+  line-height: 1.6;
+}
+
+.global-footer-links h4 {
+  color: #ffffff;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.global-footer-links a, 
+.global-footer-links p {
+  color: #d1d5db;
+  display: block;
+  margin-bottom: 12px;
+  transition: color 0.2s;
+}
+
+.global-footer-links a:hover {
+  color: #d4a574;
+}
+        .global-footer-pro {
+          background: #111827;
+          color: white;
+          padding: 60px 20px 20px;
+          margin-top: 60px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .global-footer-grid {
+          max-width: 1200px;
+          margin: 0 auto 40px;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 40px;
+        }
+        .global-footer-brand h3 { font-size: 1.5rem; font-weight: 800; margin: 0 0 16px 0; color: white; }
+        .global-footer-brand p { color: #9ca3af; line-height: 1.6; margin: 0; }
+        .global-footer-links h4 { font-size: 1.125rem; margin: 0 0 20px 0; color: white; }
+        .global-footer-links ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+        .global-footer-links a { color: #9ca3af; text-decoration: none; transition: color 0.2s; }
+        .global-footer-links a:hover { color: #d4a574; }
+        .global-footer-bottom {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding-top: 20px;
+          border-top: 1px solid #1f2937;
+          text-align: center;
+          color: #9ca3af;
+          font-size: 0.875rem;
+        }
+        .contact-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          color: #9ca3af;
+          margin-bottom: 16px;
+        }
+        .contact-item a {
+          color: #9ca3af;
+          text-decoration: none;
+          transition: color 0.2s;
+          line-height: 1.6;
+        }
+        .contact-item a:hover {
+          color: #d4a574;
+        }
+        .contact-icon {
+          color: #d4a574;
+          margin-top: 2px;
+        }
+        .admin-login-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(17,24,39,0.95), rgba(0,0,0,0.9)),
+    url('/hero-banner.png');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 460px;
+  background: rgba(255,255,255,0.96);
+  border-radius: 30px;
+  padding: 34px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+  border: 1px solid rgba(212,165,116,0.45);
+}
+
+.admin-login-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.admin-login-brand img {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+
+.admin-login-brand h1 {
+  font-size: 2.1rem;
+  color: #111827;
+  margin: 0;
+  font-weight: 900;
+}
+
+.admin-login-brand p {
+  color: #d4a574;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  margin-top: 8px;
+}
+
+.admin-login-box h2 {
+  font-size: 1.6rem;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.admin-login-box p {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.admin-pin-input {
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  outline: none;
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+
+.admin-pin-input:focus {
+  border-color: #d4a574;
+}
+
+.admin-login-btn {
+  width: 100%;
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 16px;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.admin-login-btn:hover {
+  background: #d4a574;
+  color: #111827;
+}
+.category-upload-box {
+  background: #f9fafb;
+  border: 1px dashed #d4a574;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.category-upload-box label {
+  display: block;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.category-upload-box input {
+  width: 100%;
+}
+
+.category-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-top: 14px;
+  border: 3px solid #d4a574;
+}
+.product-upload-box {
+  background: #f9fafb;
+  border: 1px dashed #d4a574;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.product-upload-box label {
+  display: block;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.product-preview {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-top: 14px;
+  border: 3px solid #d4a574;
+}
