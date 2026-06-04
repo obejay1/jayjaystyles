@@ -27,6 +27,7 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     getProducts().then(setProducts);
@@ -52,7 +53,17 @@ export default function Home() {
   }, []);
 
   const featured = products.filter((p) => p.featured).slice(0, 8);
-  const displayProducts = featured.length > 0 ? featured : products.slice(0, 8);
+  let displayProducts = featured.length > 0 ? featured : products.slice(0, 8);
+
+  // Filter locally based on the search query
+  if (searchQuery.trim()) {
+    const s = searchQuery.trim().toLowerCase();
+    displayProducts = products.filter(p =>
+      (p.name && p.name.toLowerCase().includes(s)) ||
+      (p.category && p.category.toLowerCase().includes(s)) ||
+      (p.description && p.description.toLowerCase().includes(s))
+    );
+  }
 
   return (
     <main className="jj-home">
@@ -66,9 +77,19 @@ export default function Home() {
             </div>
           </Link>
 
-          <div className="jj-search">
+          <div className="jj-search w-[170px] md:w-[280px]">
             <Search size={20} />
-            <input placeholder="Search products, services..." />
+            <input 
+              className="px-3 py-2 w-full" 
+              placeholder="Search products, services..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+            />
           </div>
 
           <div className="jj-actions">
@@ -157,7 +178,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="jj-products">
+      <section className="jj-products" id="products">
         <div className="jj-section-header">
           <div>
             <small>Our Products</small>
@@ -169,11 +190,15 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="jj-product-grid">
-          {displayProducts.map((p) => (
-            <ProductCard key={p.id} p={p} />
-          ))}
-        </div>
+        {displayProducts.length > 0 ? (
+          <div className="jj-product-grid">
+            {displayProducts.map((p) => (
+              <ProductCard key={p.id} p={p} />
+            ))}
+          </div>
+        ) : (
+          <p style={{ textAlign: 'center', padding: '40px 0', color: '#666' }}>No products found for "{searchQuery}".</p>
+        )}
       </section>
 
       <section className="jj-services">
