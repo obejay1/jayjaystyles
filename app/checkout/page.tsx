@@ -76,8 +76,11 @@ export default function Checkout() {
   }
 
   async function saveOrder(reference: string) {
+    const orderId = String(Date.now());
+    const orderDate = new Date().toLocaleString();
+
     await createOrder({
-      id: String(Date.now()),
+      id: orderId,
       items,
       subtotal,
       shipping,
@@ -95,6 +98,144 @@ export default function Checkout() {
       status: 'Processing',
       createdAt: new Date().toISOString(),
     });
+
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #111827;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; padding: 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color: #111827; padding: 30px 20px;">
+              <h1 style="color: #d4af37; margin: 0; font-size: 28px; font-weight: bold; text-transform: uppercase;">JayJayStyles</h1>
+              <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px;">Luxury Glow & Beauty</p>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <h2 style="margin: 0 0 20px 0; font-size: 24px; color: #111827;">Order Confirmation</h2>
+              <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #4b5563;">
+                Hi <strong>${fullName}</strong>,<br><br>
+                Thank you for shopping with luxury glow & beauty. Your payment has been received and your order is now being processed.
+              </p>
+
+              <!-- Order Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border-radius: 8px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563;"><strong>Order ID:</strong> #${orderId}</p>
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563;"><strong>Order Date:</strong> ${orderDate}</p>
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563;"><strong>Payment Status:</strong> <span style="color: #16a34a; font-weight: bold;">Paid (${reference})</span></p>
+                    <p style="margin: 0; font-size: 14px; color: #4b5563;"><strong>Delivery Address:</strong><br>${address}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Items Table -->
+              <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #111827; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">Order Summary</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 30px; border-collapse: collapse;">
+                <thead>
+                  <tr>
+                    <th width="60" align="left" style="padding: 10px 0; font-size: 14px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Image</th>
+                    <th align="left" style="padding: 10px 0; font-size: 14px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Product</th>
+                    <th align="center" style="padding: 10px 0; font-size: 14px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Qty</th>
+                    <th align="right" style="padding: 10px 0; font-size: 14px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${items.map(item => `
+                    <tr>
+                      <td align="left" style="padding: 15px 0; border-bottom: 1px solid #e5e7eb;">
+                        <img src="${item.image || 'https://placehold.co/100x100/f5f5f5/333?text=Product'}" width="50" height="50" alt="Product Image" style="border-radius: 6px; display: block; object-fit: cover; background-color: #f1f5f9;">
+                      </td>
+                      <td align="left" style="padding: 15px 0; font-size: 15px; color: #111827; border-bottom: 1px solid #e5e7eb; font-weight: 500;">
+                        ${item.name}
+                      </td>
+                      <td align="center" style="padding: 15px 0; font-size: 15px; color: #4b5563; border-bottom: 1px solid #e5e7eb;">
+                        ${item.qty}
+                      </td>
+                      <td align="right" style="padding: 15px 0; font-size: 15px; color: #111827; border-bottom: 1px solid #e5e7eb; font-weight: bold;">
+                        ₦${(item.price * item.qty).toLocaleString()}
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" align="right" style="padding: 15px 0 5px; font-size: 14px; color: #6b7280;">Subtotal:</td>
+                    <td align="right" style="padding: 15px 0 5px; font-size: 15px; color: #111827; font-weight: bold;">₦${subtotal.toLocaleString()}</td>
+                  </tr>
+                  ${discountAmount > 0 ? `
+                  <tr>
+                    <td colspan="3" align="right" style="padding: 5px 0; font-size: 14px; color: #6b7280;">Discount:</td>
+                    <td align="right" style="padding: 5px 0; font-size: 15px; color: #16a34a; font-weight: bold;">-₦${discountAmount.toLocaleString()}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td colspan="3" align="right" style="padding: 5px 0; font-size: 14px; color: #6b7280;">Tax (${taxRate}%):</td>
+                    <td align="right" style="padding: 5px 0; font-size: 15px; color: #111827; font-weight: bold;">₦${tax.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" align="right" style="padding: 5px 0 15px; font-size: 14px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Shipping:</td>
+                    <td align="right" style="padding: 5px 0 15px; font-size: 15px; color: #111827; font-weight: bold; border-bottom: 1px solid #e5e7eb;">₦${shipping.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" align="right" style="padding: 15px 0 0; font-size: 16px; color: #111827; font-weight: bold;">Total:</td>
+                    <td align="right" style="padding: 15px 0 0; font-size: 20px; color: #d4af37; font-weight: bold;">₦${total.toLocaleString()}</td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              <!-- Action Buttons -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 30px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://jayjaystyles-azee.vercel.app/order" style="display: inline-block; padding: 14px 30px; background-color: #d4af37; color: #111827; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 9999px; margin-bottom: 15px; width: 200px; text-align: center;">Track Order</a>
+                    <br>
+                    <a href="https://wa.me/+2349022483595" style="display: inline-block; padding: 14px 30px; background-color: #25d366; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 9999px; width: 200px; text-align: center;">WhatsApp Support</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color: #f1f5f9; padding: 30px 20px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563; font-weight: bold;">Luxury Glow & Beauty</p>
+              <p style="margin: 0 0 5px 0; font-size: 12px; color: #6b7280;">Email: support@jayjaystyles.com</p>
+              <p style="margin: 0 0 15px 0; font-size: 12px; color: #6b7280;">Phone: +234 800 000 0000</p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af;">&copy; ${new Date().getFullYear()} JayJayStyles. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    await fetch("/api/send-email", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    to: email,
+        subject: "Order Confirmation - Luxury Glow & Beauty",
+        html: emailHtml,
+  }),
+});
 
     trackEvent('purchase', {
       transaction_id: reference,

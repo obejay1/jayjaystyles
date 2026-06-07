@@ -197,7 +197,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <p style={{ textAlign: 'center', padding: '40px 0', color: '#666' }}>No products found for "{searchQuery}".</p>
+          <p style={{ textAlign: 'center', padding: '40px 0', color: '#666' }}>No products found for &quot;{searchQuery}&quot;.</p>
         )}
       </section>
 
