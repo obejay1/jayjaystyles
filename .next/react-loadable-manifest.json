@@ -1,8 +1,56 @@
 {
-  "app/checkout/page.tsx -> react-paystack": {
-    "id": "app/checkout/page.tsx -> react-paystack",
+  "app/admin/reports/page.tsx -> jspdf": {
+    "id": 53375,
     "files": [
-      "static/chunks/_app-pages-browser_node_modules_react-paystack_dist_index_es_js.js"
+      "static/chunks/2f0b94e8.6522109e181f5356.js",
+      "static/chunks/164f4fb6.b39ee7d31a481888.js",
+      "static/chunks/758.d01800785ca86a04.js"
+    ]
+  },
+  "app/admin/reports/page.tsx -> xlsx": {
+    "id": 2093,
+    "files": [
+      "static/chunks/2170a4aa.06f64c76fb375240.js",
+      "static/chunks/919.309cb8bf58085118.js"
+    ]
+  },
+  "app/checkout/page.tsx -> react-paystack": {
+    "id": 314,
+    "files": [
+      "static/chunks/314.7005aa4772fac5da.js"
+    ]
+  },
+  "app/services/page.tsx -> @/lib/bookings": {
+    "id": 55716,
+    "files": [
+      "static/chunks/69806262-f1c310e6322c67ac.js",
+      "static/chunks/605-395e97a634bf24d0.js",
+      "static/chunks/716.8a8e7397b37d00e2.js"
+    ]
+  },
+  "app/services/page.tsx -> @/lib/email": {
+    "id": 52722,
+    "files": [
+      "static/chunks/722.ea294ca69930171f.js"
+    ]
+  },
+  "node_modules/jspdf/dist/jspdf.es.min.js -> canvg": {
+    "id": 12396,
+    "files": [
+      "static/chunks/bc98253f.2a86d0955713b458.js",
+      "static/chunks/969.dbf00fa650259dbc.js"
+    ]
+  },
+  "node_modules/jspdf/dist/jspdf.es.min.js -> dompurify": {
+    "id": 18848,
+    "files": [
+      "static/chunks/848.7e7eca75fe93e186.js"
+    ]
+  },
+  "node_modules/jspdf/dist/jspdf.es.min.js -> html2canvas": {
+    "id": 24457,
+    "files": [
+      "static/chunks/ad2866b8.d16d5df33d15d005.js"
     ]
   }
 }

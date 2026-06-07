@@ -293,6 +293,7 @@ export default function Admin() {
         <a href="#categories">🗂 Categories</a>
         <a href="#orders">🛒 Orders</a>
         <a href="#bookings">📅 Bookings</a>
+        <a href="/admin/reports">📊 Financial Reports</a>
         <a href="#coupons">🎟 Coupons</a>
       </aside>
 

@@ -6,9 +6,27 @@ import Link from 'next/link';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase'; // Adjust this import based on your actual Firebase config path
 
+interface OrderItem {
+  name: string;
+  qty: number;
+  price: number;
+  image?: string;
+}
+
+interface OrderData {
+  id: string;
+  status?: string;
+  customerName: string;
+  customerEmail: string;
+  customerAddress: string;
+  createdAt: string;
+  total?: number;
+  items?: OrderItem[];
+}
+
 export default function OrderTracking() {
   const { id } = useParams() as { id: string };
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,12 +37,12 @@ export default function OrderTracking() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setOrder(docSnap.data());
+          setOrder(docSnap.data() as OrderData);
         } else {
           const q = query(collection(db, 'orders'), where('id', '==', id));
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
-            setOrder(querySnapshot.docs[0].data());
+            setOrder(querySnapshot.docs[0].data() as OrderData);
           }
         }
       } catch (error) {
@@ -49,7 +67,7 @@ export default function OrderTracking() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', padding: '20px' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '50px 30px', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)', textAlign: 'center', maxWidth: '450px', width: '100%' }}>
           <h2 style={{ color: '#111827', fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>Order Not Found</h2>
-          <p style={{ color: '#6b7280', marginBottom: '35px', lineHeight: '1.5' }}>We couldn't find an order matching ID <strong style={{color: '#111827'}}>#{id}</strong>. Please check your order ID and try again.</p>
+          <p style={{ color: '#6b7280', marginBottom: '35px', lineHeight: '1.5' }}>We couldn&apos;t find an order matching ID <strong style={{color: '#111827'}}>#{id}</strong>. Please check your order ID and try again.</p>
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
             <Link href="/" style={{ padding: '12px 24px', backgroundColor: '#111827', color: '#d4af37', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', flex: 1 }}>
               Back to Home
@@ -132,7 +150,7 @@ export default function OrderTracking() {
             <div style={{ padding: '30px' }}>
               <h3 style={{ fontSize: '14px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 20px 0' }}>Items Ordered</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {order.items.map((item: any, idx: number) => (
+                {order.items.map((item: OrderItem, idx: number) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
                     <div style={{ width: '60px', height: '60px', backgroundColor: '#f1f5f9', borderRadius: '8px', overflow: 'hidden', marginRight: '15px', flexShrink: 0 }}>
                       {item.image ? (<img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />) : (<div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '12px' }}>N/A</div>)}
