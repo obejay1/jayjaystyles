@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   getOrders,
   getProducts,
@@ -239,6 +240,37 @@ export default function Admin() {
     load();
   }
 
+  async function handleRefund(order: Order) {
+    if (!confirm(`Are you sure you want to refund and cancel order #${order.id}?`)) return;
+
+    const method = (order as any).paymentMethod;
+    if (method === 'OPay') {
+      try {
+        const res = await fetch('/api/opay/refund', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: order.id,
+            reference: (order as any).paymentReference,
+            amount: order.total,
+          }),
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('Refund processed successfully', 'success');
+          await updateOrderStatus(order.id, 'Refunded');
+          load();
+        } else {
+          showToast('Refund failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Error processing refund', 'error');
+      }
+    }
+  }
+
   const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   const activeCategories = categories.filter((c) => c.active).length;
   const productCategories = categories.filter((c) => c.type === 'product').length;
@@ -308,25 +340,25 @@ export default function Admin() {
         </div>
 
         <div className="stats-grid">
-          <div className="stat-card dark">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }} className="stat-card dark">
             <h3>Total Revenue</h3>
             <h1>{money(revenue)}</h1>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.1 }} className="stat-card">
             <h3>Products</h3>
             <h1>{products.length}</h1>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.2 }} className="stat-card">
             <h3>Categories</h3>
             <h1>{categories.length}</h1>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.3 }} className="stat-card">
             <h3>Orders</h3>
             <h1>{orders.length}</h1>
-          </div>
+          </motion.div>
         </div>
 
         <section className="table-card" style={{ maxWidth: 520 }}>
@@ -468,25 +500,25 @@ export default function Admin() {
         </section>
 
         <div className="stats-grid">
-          <div className="stat-card">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3 }} className="stat-card">
             <h3>Total Categories</h3>
             <h1>{categories.length}</h1>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: 0.1 }} className="stat-card">
             <h3>Product Categories</h3>
             <h1>{productCategories}</h1>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: 0.2 }} className="stat-card">
             <h3>Service Categories</h3>
             <h1>{serviceCategories}</h1>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: 0.3 }} className="stat-card">
             <h3>Active Categories</h3>
             <h1>{activeCategories}</h1>
-          </div>
+          </motion.div>
         </div>
 
         <section className="table-card">
@@ -700,6 +732,8 @@ export default function Admin() {
                 <th>Order</th>
                 <th>Status</th>
                 <th>Total</th>
+                <th>Method</th>
+                <th>Reference</th>
                 <th>Date</th>
                 <th>Actions</th>
               </tr>
@@ -711,11 +745,17 @@ export default function Admin() {
                   <td>#{o.id}</td>
                   <td>{o.status || 'Processing'}</td>
                   <td>{money(Number(o.total || 0))}</td>
+                  <td>{(o as any).paymentMethod || 'Paystack'}</td>
+                  <td>{(o as any).paymentReference || 'N/A'}</td>
                   <td>{o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}</td>
                   <td>
                     <button onClick={async () => { await updateOrderStatus(o.id, 'Shipped'); load(); }}>Ship</button>
                     <button onClick={async () => { await updateOrderStatus(o.id, 'Delivered'); load(); }}>Deliver</button>
-                    <button onClick={async () => { await updateOrderStatus(o.id, 'Cancelled'); load(); }}>Cancel</button>
+                    {(o as any).paymentMethod === 'OPay' ? (
+                      <button onClick={() => handleRefund(o)}>Refund & Cancel</button>
+                    ) : (
+                      <button onClick={async () => { await updateOrderStatus(o.id, 'Cancelled'); load(); }}>Cancel</button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { getCart, setCart, getProducts } from '@/lib/store';
 import { trackEvent } from '@/lib/analytics';
@@ -98,8 +99,17 @@ export default function Cart() {
             </div>
           ) : (
             <div className="checkout-items-pro">
+            <AnimatePresence mode="popLayout">
               {cartDetails.map(item => (
-                <div key={item.id} className="checkout-item-pro flex flex-col sm:flex-row gap-4 w-full max-w-full overflow-hidden items-start sm:items-center p-4">
+                <motion.div 
+                  key={item.id} 
+                  layout
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                  transition={{ duration: 0.3 }}
+                  className="checkout-item-pro flex flex-col sm:flex-row gap-4 w-full max-w-full overflow-hidden items-start sm:items-center p-4"
+                >
                   <img src={item.image || `https://placehold.co/80x80/f5f5f5/333?text=${encodeURIComponent(item.name.substring(0,2))}`} alt={item.name} className="w-24 h-24 object-cover rounded flex-shrink-0" />
                   <div className="flex-1 break-words w-full">
                     <h3 className="truncate">{item.name}</h3>
@@ -119,8 +129,9 @@ export default function Cart() {
                   <div className="whitespace-nowrap self-start sm:self-center" style={{ fontWeight: '800', fontSize: '16px' }}>
                     ₦{(item.price * item.quantity).toLocaleString()}
                   </div>
-                </div>
+                </motion.div>
               ))}
+            </AnimatePresence>
             </div>
           )}
         </div>

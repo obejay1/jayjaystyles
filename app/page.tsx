@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { getProducts, getWishlist, getCart } from '@/lib/store';
 import { Product } from '@/lib/types';
+import { motion } from 'framer-motion';
 import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
 
@@ -121,7 +122,12 @@ export default function Home() {
           className="jj-hero-img"
         />
 
-        <div className="jj-hero-content">
+        <motion.div 
+          className="jj-hero-content"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
           <div className="jj-badge">
             <Sparkles size={16} />
             Premium Beauty & Lifestyle
@@ -143,7 +149,7 @@ export default function Home() {
               Book a Service <Scissors size={18} />
             </Link>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       <section className="jj-trust">
@@ -192,8 +198,17 @@ export default function Home() {
 
         {displayProducts.length > 0 ? (
           <div className="jj-product-grid">
-            {displayProducts.map((p) => (
-              <ProductCard key={p.id} p={p} />
+            {displayProducts.map((p, index) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ scale: 1.03 }}
+              >
+                <ProductCard p={p} />
+              </motion.div>
             ))}
           </div>
         ) : (
