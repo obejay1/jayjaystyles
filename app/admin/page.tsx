@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import {
   getOrders,
   getProducts,
@@ -29,6 +31,18 @@ type Category = {
   image: string;
   description: string;
   active: boolean;
+};
+
+type Customer = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  orderCount: number;
+  totalSpent: number;
+  lastOrderDate?: string;
+  orders: Order[];
 };
 
 const defaultCategories: Category[] = [
@@ -101,6 +115,15 @@ export default function Admin() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
+  const [users, setUsers] = useState<any[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [orderSearch, setOrderSearch] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [customersPage, setCustomersPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const [form, setForm] = useState<Product>(blankProduct);
   const [categoryForm, setCategoryForm] = useState<Category>(blankCategory);
 
@@ -137,6 +160,13 @@ export default function Admin() {
     } else {
       localStorage.setItem('jj-categories', JSON.stringify(defaultCategories));
       setCategories(defaultCategories);
+    }
+
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      setUsers(usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (err) {
+      console.error('Error loading users', err);
     }
   }
 
@@ -276,7 +306,320 @@ export default function Admin() {
   const productCategories = categories.filter((c) => c.type === 'product').length;
   const serviceCategories = categories.filter((c) => c.type === 'service').length;
 
+  const customers = useMemo(() => {
+    const map = new Map<string, Customer>();
+
+    users.forEach(u => {
+      const key = (u.email || u.phone || u.id || '').toLowerCase().trim();
+      if (!key) return;
+      if (!map.has(key)) {
+        map.set(key, {
+          id: u.id || key,
+          name: u.name || u.fullName || 'Unknown',
+          email: u.email || 'N/A',
+          phone: u.phone || 'N/A',
+          address: u.address || 'N/A',
+          orderCount: 0,
+          totalSpent: 0,
+          orders: []
+        });
+      }
+    });
+
+    orders.forEach(o => {
+      const oAny = o as any;
+      const key = (oAny.customerEmail || oAny.customerPhone || oAny.id || '').toLowerCase().trim();
+      if (!key) return;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          id: key,
+          name: oAny.customerName || 'Unknown',
+          email: oAny.customerEmail || 'N/A',
+          phone: oAny.customerPhone || 'N/A',
+          address: oAny.shippingAddress || oAny.address || 'N/A',
+          orderCount: 0,
+          totalSpent: 0,
+          orders: []
+        });
+      }
+
+      const c = map.get(key)!;
+      c.orders.push(o);
+      c.orderCount++;
+      c.totalSpent += Number(o.total || 0);
+
+      const oDate = new Date(o.createdAt || 0);
+      if (!c.lastOrderDate || oDate > new Date(c.lastOrderDate)) {
+        c.lastOrderDate = o.createdAt;
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.totalSpent - a.totalSpent);
+  }, [users, orders]);
+
+  const filteredCustomers = customers.filter(c => {
+    const q = customerSearch.toLowerCase();
+    return c.name.toLowerCase().includes(q) || 
+           c.email.toLowerCase().includes(q) || 
+           c.phone.toLowerCase().includes(q);
+  });
+
+  useEffect(() => {
+    setCustomersPage(1);
+  }, [customerSearch]);
+
+  const filteredOrders = orders.filter(o => {
+    const q = orderSearch.toLowerCase();
+    const oAny = o as any;
+    return (
+      String(o.id).toLowerCase().includes(q) ||
+      (o.status || '').toLowerCase().includes(q) ||
+      (oAny.paymentMethod || '').toLowerCase().includes(q) ||
+      (oAny.paymentReference || '').toLowerCase().includes(q) ||
+      (oAny.customerName || '').toLowerCase().includes(q) ||
+      (oAny.customerEmail || '').toLowerCase().includes(q) ||
+      (oAny.customerPhone || '').toLowerCase().includes(q)
+    );
+  });
+
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [orderSearch]);
+
+  const totalOrdersPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE) || 1;
+  const paginatedOrders = filteredOrders.slice((ordersPage - 1) * ITEMS_PER_PAGE, ordersPage * ITEMS_PER_PAGE);
+
+  const totalCustomersPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE) || 1;
+  const paginatedCustomers = filteredCustomers.slice((customersPage - 1) * ITEMS_PER_PAGE, customersPage * ITEMS_PER_PAGE);
+
+  const exportCustomersCSV = () => {
+    const headers = ['Name', 'Email', 'Phone', 'Address', 'Orders', 'Total Spent', 'Last Order'];
+    const rows = filteredCustomers.map(c => [
+      `"${(c.name || '').replace(/"/g, '""')}"`,
+      `"${(c.email || '').replace(/"/g, '""')}"`,
+      `"${(c.phone || '').replace(/"/g, '""')}"`,
+      `"${(c.address || 'N/A').replace(/"/g, '""')}"`,
+      c.orderCount,
+      c.totalSpent,
+      `"${c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleString() : 'N/A'}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `jayjaystyles-customers-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportOrdersCSV = () => {
+    const headers = ['Order ID', 'Status', 'Total', 'Payment Method', 'Payment Reference', 'Date', 'Customer Name', 'Customer Email', 'Customer Phone'];
+    const rows = filteredOrders.map(o => [
+      `"${o.id}"`,
+      `"${o.status || 'Processing'}"`,
+      Number(o.total || 0),
+      `"${(o as any).paymentMethod || 'Paystack'}"`,
+      `"${(o as any).paymentReference || 'N/A'}"`,
+      `"${o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}"`,
+      `"${((o as any).customerName || 'N/A').replace(/"/g, '""')}"`,
+      `"${((o as any).customerEmail || 'N/A').replace(/"/g, '""')}"`,
+      `"${((o as any).customerPhone || 'N/A').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `jayjaystyles-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCustomerPDF = () => {
+    if (!selectedCustomer) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <html>
+        <head>
+          <title>Customer Details - ${selectedCustomer.name}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1a1a1a; }
+            h2 { border-bottom: 2px solid #eaeaea; padding-bottom: 10px; }
+            .details-grid { display: flex; gap: 40px; margin-bottom: 40px; background: #f8fafc; padding: 20px; border-radius: 8px; }
+            .details-grid p { margin: 8px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+            th { background-color: #f1f5f9; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <h2>Customer Details</h2>
+          <div class="details-grid">
+            <div>
+              <p><strong>Name:</strong> ${selectedCustomer.name}</p>
+              <p><strong>Email:</strong> ${selectedCustomer.email}</p>
+              <p><strong>Phone:</strong> ${selectedCustomer.phone}</p>
+              <p><strong>Address:</strong> ${selectedCustomer.address}</p>
+            </div>
+            <div>
+              <p><strong>Total Orders:</strong> ${selectedCustomer.orderCount}</p>
+              <p><strong>Total Spent:</strong> ${money(selectedCustomer.totalSpent)}</p>
+              <p><strong>Last Order:</strong> ${selectedCustomer.lastOrderDate ? new Date(selectedCustomer.lastOrderDate).toLocaleString() : 'N/A'}</p>
+            </div>
+          </div>
+
+          <h3>Order History</h3>
+          ${selectedCustomer.orders.length === 0 ? '<p>No orders yet.</p>' : `
+            <table>
+              <thead>
+                <tr><th>Order ID</th><th>Date</th><th>Status</th><th>Total</th></tr>
+              </thead>
+              <tbody>
+                ${selectedCustomer.orders.map(o => `<tr><td>#${o.id}</td><td>${o.createdAt ? new Date(o.createdAt).toLocaleDateString() : 'N/A'}</td><td>${o.status || 'Processing'}</td><td>${money(Number(o.total || 0))}</td></tr>`).join('')}
+              </tbody>
+            </table>
+          `}
+          <script>window.onload = () => setTimeout(() => { window.print(); window.close(); }, 250);</script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
+  const exportOrderInvoicePDF = (order: Order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const oAny = order as any;
+    const items = oAny.items || [];
+    const subtotal = oAny.subtotal || order.total || 0;
+    const shipping = oAny.shipping || 0;
+    const tax = oAny.tax || 0;
+    const total = order.total || 0;
+
+    const html = `
+      <html>
+        <head>
+          <title>Invoice - Order #${order.id}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eaeaea; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #d4af37; }
+            .header p { margin: 4px 0; color: #666; }
+            .invoice-details { display: flex; gap: 40px; margin-bottom: 40px; }
+            .invoice-details div { flex: 1; }
+            h3 { border-bottom: 1px solid #eaeaea; padding-bottom: 8px; margin-bottom: 16px; font-size: 16px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th, td { border-bottom: 1px solid #e2e8f0; padding: 12px 8px; text-align: left; }
+            th { background-color: #f8fafc; font-weight: 600; color: #333; }
+            .totals { width: 300px; margin-left: auto; }
+            .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f8fafc; }
+            .totals-row.grand-total { font-weight: bold; font-size: 1.1em; border-bottom: none; border-top: 2px solid #eaeaea; padding-top: 12px; margin-top: 8px; }
+            .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+            .badge.green { background: #dcfce7; color: #166534; }
+            .badge.gold { background: #fef08a; color: #92400e; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>JayJayStyles</h1>
+              <p>Luxury Beauty, Fashion &amp; Lifestyle Store</p>
+            </div>
+            <div style="text-align: right;">
+              <h2 style="margin: 0 0 8px 0;">INVOICE</h2>
+              <p><strong>Order ID:</strong> #${order.id}</p>
+              <p><strong>Date:</strong> ${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'N/A'}</p>
+              <p><strong>Status:</strong> <span class="badge ${order.status === 'Delivered' ? 'green' : 'gold'}">${order.status || 'Processing'}</span></p>
+            </div>
+          </div>
+
+          <div class="invoice-details">
+            <div>
+              <h3>Bill To:</h3>
+              <p><strong>${oAny.customerName || 'N/A'}</strong></p>
+              <p>${oAny.customerEmail || 'N/A'}</p>
+              <p>${oAny.customerPhone || 'N/A'}</p>
+            </div>
+            <div>
+              <h3>Ship To:</h3>
+              <p>${oAny.shippingAddress || oAny.address || 'N/A'}</p>
+            </div>
+            <div>
+              <h3>Payment Info:</h3>
+              <p><strong>Method:</strong> ${oAny.paymentMethod || 'Paystack'}</p>
+              <p><strong>Reference:</strong> ${oAny.paymentReference || 'N/A'}</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th style="text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.length > 0 ? items.map((item: any) => `
+                <tr>
+                  <td>
+                    <div style="font-weight: 500;">${item.name || 'Product'}</div>
+                    <div style="font-size: 0.9em; color: #666;">${item.category || ''}</div>
+                  </td>
+                  <td>${money(Number(item.price || 0))}</td>
+                  <td>${item.qty || item.quantity || 1}</td>
+                  <td style="text-align: right;">${money(Number(item.price || 0) * Number(item.qty || item.quantity || 1))}</td>
+                </tr>
+              `).join('') : `<tr><td colSpan="4" style="text-align: center;">No items found.</td></tr>`}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="totals-row">
+              <span>Subtotal:</span>
+              <span>${money(Number(subtotal))}</span>
+            </div>
+            <div class="totals-row">
+              <span>Shipping:</span>
+              <span>${money(Number(shipping))}</span>
+            </div>
+            <div class="totals-row">
+              <span>Tax:</span>
+              <span>${money(Number(tax))}</span>
+            </div>
+            <div class="totals-row grand-total">
+              <span>Total:</span>
+              <span>${money(Number(total))}</span>
+            </div>
+          </div>
+
+          <script>window.onload = () => setTimeout(() => { window.print(); window.close(); }, 250);</script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   if (!ok) {
+    const handleLogin = () => {
+      if (pin === (process.env.NEXT_PUBLIC_ADMIN_PIN || '1234')) {
+        setOk(true);
+      } else {
+        showToast('Incorrect Admin PIN', 'error');
+      }
+    };
+
     return (
       <main className="admin-login-page">
         <div className="admin-login-card">
@@ -298,13 +641,16 @@ export default function Admin() {
               onChange={(e) => setPin(e.target.value)}
               type="password"
               placeholder="Enter Admin PIN"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleLogin();
+                }
+              }}
             />
 
             <button
               className="admin-login-btn"
-              onClick={() =>
-                setOk(pin === (process.env.NEXT_PUBLIC_ADMIN_PIN || '1234'))
-              }
+              onClick={handleLogin}
             >
               Login to Dashboard
             </button>
@@ -320,17 +666,21 @@ export default function Admin() {
         <h2>JayJayStyles</h2>
         <p className="admin-subtitle">Admin Dashboard</p>
 
-        <a href="#dashboard">🏠 Dashboard</a>
+        <a href="#admin">🏠 Dashboard</a>
         <a href="#products">📦 Products &amp; Services</a>
         <a href="#categories">🗂 Categories</a>
         <a href="#orders">🛒 Orders</a>
         <a href="#bookings">📅 Bookings</a>
+        <a href="#customers">👥 Customers</a>
         <a href="/admin/reports">📊 Financial Reports</a>
         <a href="#coupons">🎟 Coupons</a>
+        <a href="#" style={{ marginTop: 20 }} onClick={(e) => { e.preventDefault(); setOk(false); setPin(''); }}>
+          🚪 Logout
+        </a>
       </aside>
 
       <main className="admin-content">
-        <div className="topbar" id="dashboard">
+        <div className="topbar" id="admin">
           <div>
             <h1>Welcome Back Admin</h1>
             <p>Manage JayJayStyles products, services, categories, orders and bookings.</p>
@@ -724,7 +1074,24 @@ export default function Admin() {
         </section>
 
         <section className="table-card" id="orders">
-          <h2>Orders</h2>
+          <div className="admin-section-title" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <h2>Orders</h2>
+              <p>Manage and process customer orders.</p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button onClick={exportOrdersCSV} className="btn light" style={{ whiteSpace: 'nowrap' }}>
+                Download CSV
+              </button>
+              <input 
+                className="input" 
+                placeholder="Search ID, customer, ref..." 
+                value={orderSearch}
+                onChange={(e) => setOrderSearch(e.target.value)}
+                style={{ maxWidth: 300 }}
+              />
+            </div>
+          </div>
 
           <table className="table">
             <thead>
@@ -740,27 +1107,68 @@ export default function Admin() {
             </thead>
 
             <tbody>
-              {orders.map((o) => (
-                <tr key={String(o.id)}>
-                  <td>#{o.id}</td>
-                  <td>{o.status || 'Processing'}</td>
-                  <td>{money(Number(o.total || 0))}</td>
-                  <td>{(o as any).paymentMethod || 'Paystack'}</td>
-                  <td>{(o as any).paymentReference || 'N/A'}</td>
-                  <td>{o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}</td>
-                  <td>
-                    <button onClick={async () => { await updateOrderStatus(o.id, 'Shipped'); load(); }}>Ship</button>
-                    <button onClick={async () => { await updateOrderStatus(o.id, 'Delivered'); load(); }}>Deliver</button>
-                    {(o as any).paymentMethod === 'OPay' ? (
-                      <button onClick={() => handleRefund(o)}>Refund & Cancel</button>
-                    ) : (
-                      <button onClick={async () => { await updateOrderStatus(o.id, 'Cancelled'); load(); }}>Cancel</button>
-                    )}
-                  </td>
+              {paginatedOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center' }}>No orders found</td>
                 </tr>
-              ))}
+              ) : (
+                paginatedOrders.map((o) => (
+                  <tr key={String(o.id)}>
+                    <td>#{o.id}</td>
+                    <td>{o.status || 'Processing'}</td>
+                    <td>{money(Number(o.total || 0))}</td>
+                    <td>{(o as any).paymentMethod || 'Paystack'}</td>
+                    <td>{(o as any).paymentReference || 'N/A'}</td>
+                    <td>{o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}</td>
+                    <td>
+                      <button onClick={() => window.open(`/invoice/${o.id}`, '_blank')}>View Invoice</button>
+                      <button onClick={() => window.open(`/invoice/${o.id}?print=true`, '_blank')}>Print Invoice</button>
+                      <button onClick={async () => { 
+                        if (confirm(`Mark order #${o.id} as Shipped?`)) {
+                          await updateOrderStatus(o.id, 'Shipped'); 
+                          load(); 
+                        }
+                      }}>Ship</button>
+                      <button onClick={async () => { 
+                        if (confirm(`Mark order #${o.id} as Delivered?`)) {
+                          await updateOrderStatus(o.id, 'Delivered'); 
+                          load(); 
+                        }
+                      }}>Deliver</button>
+                      {(o as any).paymentMethod === 'OPay' ? (
+                        <button onClick={() => handleRefund(o)}>Refund & Cancel</button>
+                      ) : (
+                        <button onClick={async () => { 
+                          if (confirm(`Cancel order #${o.id}?`)) {
+                            await updateOrderStatus(o.id, 'Cancelled'); 
+                            load(); 
+                          }
+                        }}>Cancel</button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+            <button 
+              className="btn light" 
+              disabled={ordersPage === 1} 
+              onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+            >
+              Previous
+            </button>
+            <span style={{ fontSize: 14, fontWeight: 500 }}>Page {ordersPage} of {totalOrdersPages}</span>
+            <button 
+              className="btn light" 
+              disabled={ordersPage === totalOrdersPages} 
+              onClick={() => setOrdersPage(p => Math.min(totalOrdersPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
         </section>
 
         <section className="table-card" id="bookings">
@@ -808,6 +1216,82 @@ export default function Admin() {
               )}
             </tbody>
           </table>
+        </section>
+
+        <section className="table-card" id="customers">
+          <div className="admin-section-title" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <h2>Customers</h2>
+              <p>Manage customers and view their order history.</p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button onClick={exportCustomersCSV} className="btn light" style={{ whiteSpace: 'nowrap' }}>
+                Download CSV
+              </button>
+              <input 
+                className="input" 
+                placeholder="Search name, email, phone..." 
+                value={customerSearch}
+                onChange={(e) => setCustomerSearch(e.target.value)}
+                style={{ maxWidth: 300 }}
+              />
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto', marginTop: 16 }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Orders</th>
+                  <th>Total Spent</th>
+                  <th>Last Order</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCustomers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center' }}>No customers found</td>
+                  </tr>
+                ) : (
+                  paginatedCustomers.map(c => (
+                    <tr key={c.id}>
+                      <td>{c.name}</td>
+                      <td>{c.email}</td>
+                      <td>{c.phone}</td>
+                      <td>{c.orderCount}</td>
+                      <td>{money(c.totalSpent)}</td>
+                      <td>{c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString() : 'N/A'}</td>
+                      <td>
+                        <button onClick={() => setSelectedCustomer(c)}>View Details</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+            <button 
+              className="btn light" 
+              disabled={customersPage === 1} 
+              onClick={() => setCustomersPage(p => Math.max(1, p - 1))}
+            >
+              Previous
+            </button>
+            <span style={{ fontSize: 14, fontWeight: 500 }}>Page {customersPage} of {totalCustomersPages}</span>
+            <button 
+              className="btn light" 
+              disabled={customersPage === totalCustomersPages} 
+              onClick={() => setCustomersPage(p => Math.min(totalCustomersPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
         </section>
 
         <section className="table-card" id="coupons">
@@ -877,7 +1361,12 @@ export default function Admin() {
                       expiryDate: c.expiryDate || '',
                       active: c.active ?? true,
                     })}>Edit</button>
-                    <button onClick={async () => { await removeCoupon(c.id); load(); }}>Delete</button>
+                    <button onClick={async () => {
+                      if (confirm(`Delete coupon ${c.code}?`)) {
+                        await removeCoupon(c.id);
+                        load();
+                      }
+                    }}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -885,6 +1374,68 @@ export default function Admin() {
           </table>
         </section>
       </main>
+
+      {selectedCustomer && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div className="modal-content table-card" style={{ maxWidth: 800, width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <h2 style={{ margin: 0 }}>Customer Details</h2>
+                <button onClick={exportCustomerPDF} className="btn light" style={{ padding: '6px 12px', fontSize: 14 }}>Export PDF</button>
+              </div>
+              <button onClick={() => setSelectedCustomer(null)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#333' }}>&times;</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 30, padding: 16, background: '#f8fafc', borderRadius: 12 }}>
+              <div>
+                <p style={{ margin: '4px 0' }}><strong>Name:</strong> {selectedCustomer.name}</p>
+                <p style={{ margin: '4px 0' }}><strong>Email:</strong> {selectedCustomer.email}</p>
+                <p style={{ margin: '4px 0' }}><strong>Phone:</strong> {selectedCustomer.phone}</p>
+                <p style={{ margin: '4px 0' }}><strong>Address:</strong> {selectedCustomer.address}</p>
+              </div>
+              <div>
+                <p style={{ margin: '4px 0' }}><strong>Total Orders:</strong> {selectedCustomer.orderCount}</p>
+                <p style={{ margin: '4px 0' }}><strong>Total Spent:</strong> {money(selectedCustomer.totalSpent)}</p>
+                <p style={{ margin: '4px 0' }}><strong>Last Order:</strong> {selectedCustomer.lastOrderDate ? new Date(selectedCustomer.lastOrderDate).toLocaleString() : 'N/A'}</p>
+              </div>
+            </div>
+
+            <h3>Order History</h3>
+            {selectedCustomer.orders.length === 0 ? (
+              <p>No orders yet.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table" style={{ marginTop: 10 }}>
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Total</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedCustomer.orders.map(o => (
+                      <tr key={String(o.id)}>
+                        <td>#{o.id}</td>
+                        <td>{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : 'N/A'}</td>
+                        <td>
+                          <span className={o.status === 'Delivered' ? 'badge green' : o.status === 'Cancelled' ? 'badge red' : 'badge gold'}>
+                            {o.status || 'Processing'}
+                          </span>
+                        </td>
+                        <td>{money(Number(o.total || 0))}</td>
+                        <td><button onClick={() => window.open(`/invoice/${o.id}`, '_blank')}>View Invoice</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
