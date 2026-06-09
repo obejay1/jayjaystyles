@@ -615,6 +615,7 @@ export default function Admin() {
     const handleLogin = () => {
       if (pin === (process.env.NEXT_PUBLIC_ADMIN_PIN || '1234')) {
         setOk(true);
+        sessionStorage.setItem('jayjay_admin', 'true');
       } else {
         showToast('Incorrect Admin PIN', 'error');
       }
@@ -674,7 +675,12 @@ export default function Admin() {
         <a href="#customers">👥 Customers</a>
         <a href="/admin/reports">📊 Financial Reports</a>
         <a href="#coupons">🎟 Coupons</a>
-        <a href="#" style={{ marginTop: 20 }} onClick={(e) => { e.preventDefault(); setOk(false); setPin(''); }}>
+        <a href="#" style={{ marginTop: 20 }} onClick={(e) => { 
+          e.preventDefault(); 
+          setOk(false); 
+          setPin(''); 
+          sessionStorage.removeItem('jayjay_admin');
+        }}>
           🚪 Logout
         </a>
       </aside>
