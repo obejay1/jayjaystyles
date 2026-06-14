@@ -28,6 +28,8 @@ export default function Checkout() {
   const [discount, setDiscount] = useState(0);
   const [taxRate, setTaxRate] = useState(7.5);
   const [shippingFee, setShippingFee] = useState(1500);
+  const [deliveryDaysText, setDeliveryDaysText] = useState('2–5 business days');
+  const [deliveryDaysCount, setDeliveryDaysCount] = useState(5);
 
   const [paymentMethod, setPaymentMethod] = useState<'Paystack' | 'OPay'>(
     'Paystack'
@@ -45,6 +47,8 @@ export default function Checkout() {
     getCheckoutSettings().then((s) => {
       setTaxRate(s.taxRate ?? 7.5);
       setShippingFee(s.shippingFee ?? 1500);
+      setDeliveryDaysText(s.deliveryDaysText ?? '2–5 business days');
+      setDeliveryDaysCount(s.deliveryDaysCount ?? 5);
     });
   }, []);
 
@@ -92,6 +96,10 @@ export default function Checkout() {
       setIsProcessingOPay(true);
 
       const orderId = String(Date.now());
+      
+      const estDate = new Date();
+      estDate.setDate(estDate.getDate() + deliveryDaysCount);
+      const estimatedDeliveryDate = estDate.toISOString();
 
       sessionStorage.setItem(
         'opay_checkout_data',
@@ -112,6 +120,8 @@ export default function Checkout() {
           customerAddress: address,
           status: 'Processing',
           createdAt: new Date().toISOString(),
+          deliveryDays: deliveryDaysText,
+          estimatedDeliveryDate,
         })
       );
 
@@ -148,6 +158,10 @@ export default function Checkout() {
   async function saveOrder(reference: string) {
     const orderId = String(Date.now());
     const orderDate = new Date().toLocaleString();
+    
+    const estDate = new Date();
+    estDate.setDate(estDate.getDate() + deliveryDaysCount);
+    const estimatedDeliveryDate = estDate.toISOString();
 
     await createOrder({
       id: orderId,
@@ -167,6 +181,8 @@ export default function Checkout() {
       customerAddress: address,
       status: 'Processing',
       createdAt: new Date().toISOString(),
+      deliveryDays: deliveryDaysText,
+      estimatedDeliveryDate,
     });
 
     const emailHtml = `
@@ -204,7 +220,8 @@ export default function Checkout() {
                     <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563;"><strong>Order ID:</strong> #${orderId}</p>
                     <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563;"><strong>Order Date:</strong> ${orderDate}</p>
                     <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563;"><strong>Payment Status:</strong> <span style="color: #16a34a; font-weight: bold;">Paid (${reference})</span></p>
-                    <p style="margin: 0; font-size: 14px; color: #4b5563;"><strong>Delivery Address:</strong><br>${address}</p>
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563;"><strong>Delivery Address:</strong><br>${address}</p>
+                    <p style="margin: 0; font-size: 14px; color: #4b5563;"><strong>Estimated Delivery:</strong> ${deliveryDaysText}</p>
                   </td>
                 </tr>
               </table>
@@ -500,6 +517,81 @@ export default function Checkout() {
             <span>Shipping</span>
             <strong>{money(shipping)}</strong>
           </div>
+
+          <div
+  style={{
+    marginTop: '14px',
+    marginBottom: '14px',
+    padding: '16px',
+    borderRadius: '18px',
+    background: 'linear-gradient(135deg, #fffbeb, #ffffff)',
+    border: '1px solid #facc15',
+    boxShadow: '0 10px 25px rgba(212, 175, 55, 0.12)',
+  }}
+>
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '12px',
+    }}
+  >
+    <div>
+      <p
+        style={{
+          margin: 0,
+          fontSize: '13px',
+          fontWeight: 800,
+          color: '#92400e',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >
+        🚚 Estimated Delivery
+      </p>
+
+      <h3
+        style={{
+          margin: '6px 0 0',
+          fontSize: '18px',
+          fontWeight: 900,
+          color: '#111827',
+        }}
+      >
+        {deliveryDaysText}
+      </h3>
+
+      <p
+        style={{
+          margin: '6px 0 0',
+          fontSize: '13px',
+          color: '#6b7280',
+          lineHeight: 1.5,
+        }}
+      >
+        Your order will be processed after successful payment.
+      </p>
+    </div>
+
+    <div
+      style={{
+        minWidth: '52px',
+        height: '52px',
+        borderRadius: '16px',
+        background: '#111827',
+        color: '#d4af37',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '24px',
+        fontWeight: 900,
+      }}
+    >
+      📦
+    </div>
+  </div>
+</div>
 
           <div className="checkout-summary-total">
             <span>Total</span>

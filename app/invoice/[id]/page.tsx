@@ -98,6 +98,20 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
   const discount = order.discount || 0;
   const total = order.total || 0;
 
+  let watermarkText = 'JAYJAYSTYLES';
+  let watermarkColor = 'rgba(0, 0, 0, 0.05)';
+
+  if (order.paymentStatus === 'Paid') {
+    watermarkText = 'PAID ✅';
+    watermarkColor = 'rgba(22, 163, 74, 0.05)'; // Green
+  } else if (order.paymentStatus === 'Pending') {
+    watermarkText = 'PENDING ⏳';
+    watermarkColor = 'rgba(217, 119, 6, 0.05)'; // Amber
+  } else if (order.paymentStatus === 'Failed') {
+    watermarkText = 'FAILED ❌';
+    watermarkColor = 'rgba(220, 38, 38, 0.05)'; // Red
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '40px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <style dangerouslySetInnerHTML={{ __html: `
@@ -120,7 +134,25 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
         </button>
       </div>
 
-      <div className="invoice-container" id="invoice-content" style={{ maxWidth: 850, margin: '0 auto', background: '#ffffff', borderRadius: 16, padding: '48px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+      <div className="invoice-container" id="invoice-content" style={{ position: 'relative', overflow: 'hidden', maxWidth: 850, margin: '0 auto', background: '#ffffff', borderRadius: 16, padding: '48px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+        
+        <div className="invoice-watermark" style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%) rotate(-30deg)',
+          fontSize: '150px',
+          fontWeight: 900,
+          color: watermarkColor,
+          zIndex: 0,
+          pointerEvents: 'none',
+          userSelect: 'none',
+          whiteSpace: 'nowrap'
+        }}>
+          {watermarkText}
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
         
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #f1f5f9', paddingBottom: 30, marginBottom: 30, flexWrap: 'wrap', gap: 20 }}>
@@ -145,6 +177,8 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
             <p style={{ margin: '4px 0', color: '#475569', fontSize: 14 }}><strong>Invoice No:</strong> INV-{order.id.slice(0, 8).toUpperCase()}</p>
             <p style={{ margin: '4px 0', color: '#475569', fontSize: 14 }}><strong>Order ID:</strong> #{order.id}</p>
             <p style={{ margin: '4px 0', color: '#475569', fontSize: 14 }}><strong>Date:</strong> {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</p>
+            {order.deliveryDays && <p style={{ margin: '4px 0', color: '#475569', fontSize: 14 }}><strong>Estimated Delivery:</strong> {order.deliveryDays}</p>}
+            {order.estimatedDeliveryDate && <p style={{ margin: '4px 0', color: '#475569', fontSize: 14 }}><strong>Est. Delivery Date:</strong> {new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p>}
           </div>
         </div>
 
@@ -255,6 +289,7 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
           <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>If you have any questions about this invoice, please contact support@jayjaystyles.com</p>
         </div>
 
+        </div>
       </div>
     </div>
   );

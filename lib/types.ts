@@ -1,7 +1,7 @@
 export type Product={id:string;name:string;price:number;category:string;type:'product'|'service';description:string;image:string;featured?:boolean;bestseller?:boolean;stock:number};
 export type Order={
 	id:string;
-	items:{id:string;name:string;price:number;qty:number}[];
+	items:{id?:string;name?:string;category?:string;price?:number;qty?:number;quantity?:number;image?:string}[];
 	subtotal:number;
 	shipping:number;
 	tax:number;
@@ -18,5 +18,10 @@ export type Order={
 	customerName?:string;
 	customerPhone?:string;
 	customerAddress?:string;
+	shippingAddress?:string;
+	address?:string;
+	deliveryDays?: string;
+    deliveryDaysCount?: number;
+    estimatedDeliveryDate?: string;  
 };
 export type Session={id:string;userId:string;email:string;loginAt:string;userAgent:string};

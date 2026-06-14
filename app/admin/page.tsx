@@ -1,5 +1,5 @@
 'use client';
-
+import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { collection, getDocs } from 'firebase/firestore';
@@ -13,7 +13,7 @@ import {
   updateOrderStatus,
 } from '@/lib/store';
 import {
-  getBookings,
+  getBookings, 
   removeBooking,
   updateBookingStatus,
   Booking,
@@ -22,6 +22,7 @@ import { getCoupons, saveCoupon, removeCoupon, Coupon } from '@/lib/coupons';
 import { getCheckoutSettings, saveCheckoutSettings } from '@/lib/settings';
 import { Product, Order } from '@/lib/types';
 import { showToast } from '@/lib/toast';
+
 
 type Category = {
   id: string;
@@ -33,6 +34,37 @@ type Category = {
   active: boolean;
 };
 
+type AdminOrder = Omit<Order, 'items'> & {
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  shippingAddress?: string;
+  customerAddress?: string;
+  address?: string;
+  deliveryDays?: string;
+  deliveryDaysText?: string;
+  estimatedDeliveryDate?: string;
+  paymentMethod?: string;
+  paymentReference?: string;
+  subtotal?: number;
+  shipping?: number;
+  tax?: number;
+  total?: number;
+  createdAt?: string;
+  status?: string;
+  items?: Array<{
+    id?: string;
+    name?: string;
+    category?: string;
+    price?: number;
+    qty?: number;
+    quantity?: number;
+    image?: string;
+    description?: string;
+    stock?: number;
+  }>;
+};
+
 type Customer = {
   id: string;
   name: string;
@@ -42,7 +74,7 @@ type Customer = {
   orderCount: number;
   totalSpent: number;
   lastOrderDate?: string;
-  orders: Order[];
+  orders: AdminOrder[];
 };
 
 const defaultCategories: Category[] = [
@@ -105,17 +137,26 @@ const blankCategory: Category = {
   active: true,
 };
 
+type UserDoc = {
+  id: string;
+  name?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+};
+
 export default function Admin() {
   const [ok, setOk] = useState(false);
   const [pin, setPin] = useState('');
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserDoc[]>([]);
   const [customerSearch, setCustomerSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -139,17 +180,45 @@ export default function Admin() {
 
   const [checkoutTaxRate, setCheckoutTaxRate] = useState<number>(7.5);
   const [checkoutShippingFee, setCheckoutShippingFee] = useState<number>(1500);
+  const [checkoutDeliveryDaysText, setCheckoutDeliveryDaysText] = useState<string>('2–5 business days');
+  const [checkoutDeliveryDaysCount, setCheckoutDeliveryDaysCount] = useState<number>(5);
+  const [storeMode, setStoreMode] = useState<'Live' | 'Maintenance'>('Live');
+  const [maintenanceEndDate, setMaintenanceEndDate] = useState<string>('');
 
   async function load() {
     setProducts(await getProducts());
-    setOrders(await getOrders());
+    setOrders(await getOrders() as AdminOrder[]);
     setBookings(await getBookings());
     setCoupons(await getCoupons());
 
     try {
-      const s = await getCheckoutSettings();
+      const s = await getCheckoutSettings() as Awaited<ReturnType<typeof getCheckoutSettings>> & {
+        deliveryDaysText?: string;
+        deliveryDaysCount?: number;
+        storeMode?: 'Live' | 'Maintenance';
+        maintenanceEndDate?: string;
+      };
       setCheckoutTaxRate(s.taxRate);
       setCheckoutShippingFee(s.shippingFee);
+      if (s.deliveryDaysText) setCheckoutDeliveryDaysText(s.deliveryDaysText);
+      if (s.deliveryDaysCount !== undefined) setCheckoutDeliveryDaysCount(s.deliveryDaysCount);
+
+      const maintenanceHasEnded =
+        s.storeMode === 'Maintenance' &&
+        !!s.maintenanceEndDate &&
+        new Date(s.maintenanceEndDate).getTime() <= Date.now();
+
+      if (maintenanceHasEnded) {
+        setStoreMode('Live');
+        setMaintenanceEndDate('');
+        await saveCheckoutSettings({
+          storeMode: 'Live',
+          maintenanceEndDate: '',
+        });
+      } else {
+        if (s.storeMode) setStoreMode(s.storeMode);
+        setMaintenanceEndDate(s.maintenanceEndDate || '');
+      }
     } catch {
       /* ignore */
     }
@@ -270,10 +339,10 @@ export default function Admin() {
     load();
   }
 
-  async function handleRefund(order: Order) {
+  async function handleRefund(order: AdminOrder) {
     if (!confirm(`Are you sure you want to refund and cancel order #${order.id}?`)) return;
 
-    const method = (order as any).paymentMethod;
+    const method = order.paymentMethod;
     if (method === 'OPay') {
       try {
         const res = await fetch('/api/opay/refund', {
@@ -281,7 +350,7 @@ export default function Admin() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: order.id,
-            reference: (order as any).paymentReference,
+            reference: order.paymentReference,
             amount: order.total,
           }),
         });
@@ -327,17 +396,16 @@ export default function Admin() {
     });
 
     orders.forEach(o => {
-      const oAny = o as any;
-      const key = (oAny.customerEmail || oAny.customerPhone || oAny.id || '').toLowerCase().trim();
+      const key = (o.customerEmail || o.customerPhone || o.id || '').toLowerCase().trim();
       if (!key) return;
 
       if (!map.has(key)) {
         map.set(key, {
           id: key,
-          name: oAny.customerName || 'Unknown',
-          email: oAny.customerEmail || 'N/A',
-          phone: oAny.customerPhone || 'N/A',
-          address: oAny.shippingAddress || oAny.address || 'N/A',
+          name: o.customerName || 'Unknown',
+          email: o.customerEmail || 'N/A',
+          phone: o.customerPhone || 'N/A',
+          address: o.shippingAddress || o.customerAddress || o.address || 'N/A',
           orderCount: 0,
           totalSpent: 0,
           orders: []
@@ -371,15 +439,14 @@ export default function Admin() {
 
   const filteredOrders = orders.filter(o => {
     const q = orderSearch.toLowerCase();
-    const oAny = o as any;
     return (
       String(o.id).toLowerCase().includes(q) ||
       (o.status || '').toLowerCase().includes(q) ||
-      (oAny.paymentMethod || '').toLowerCase().includes(q) ||
-      (oAny.paymentReference || '').toLowerCase().includes(q) ||
-      (oAny.customerName || '').toLowerCase().includes(q) ||
-      (oAny.customerEmail || '').toLowerCase().includes(q) ||
-      (oAny.customerPhone || '').toLowerCase().includes(q)
+      (o.paymentMethod || '').toLowerCase().includes(q) ||
+      (o.paymentReference || '').toLowerCase().includes(q) ||
+      (o.customerName || '').toLowerCase().includes(q) ||
+      (o.customerEmail || '').toLowerCase().includes(q) ||
+      (o.customerPhone || '').toLowerCase().includes(q)
     );
   });
 
@@ -392,6 +459,61 @@ export default function Admin() {
 
   const totalCustomersPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE) || 1;
   const paginatedCustomers = filteredCustomers.slice((customersPage - 1) * ITEMS_PER_PAGE, customersPage * ITEMS_PER_PAGE);
+
+  function getEstimatedDeliveryDate(order: AdminOrder) {
+    if (order.estimatedDeliveryDate) {
+      const savedDate = new Date(order.estimatedDeliveryDate);
+      if (!Number.isNaN(savedDate.getTime())) return savedDate;
+    }
+
+    if (order.createdAt && checkoutDeliveryDaysCount > 0) {
+      const createdDate = new Date(order.createdAt);
+      if (!Number.isNaN(createdDate.getTime())) {
+        const estimatedDate = new Date(createdDate);
+        estimatedDate.setDate(estimatedDate.getDate() + Number(checkoutDeliveryDaysCount));
+        return estimatedDate;
+      }
+    }
+
+    return null;
+  }
+
+  function getEstimatedDeliveryDisplay(order: AdminOrder) {
+    const estimatedDate = getEstimatedDeliveryDate(order);
+    return estimatedDate ? estimatedDate.toLocaleDateString() : 'N/A';
+  }
+
+  function getDeliveryLabel(order: AdminOrder) {
+    return (
+      order.deliveryDays ||
+      order.deliveryDaysText ||
+      (getEstimatedDeliveryDate(order)
+        ? `Estimated by ${getEstimatedDeliveryDisplay(order)}`
+        : checkoutDeliveryDaysText || 'N/A')
+    );
+  }
+
+  async function saveAdminCheckoutSettings() {
+    const nextMode = storeMode;
+    const nextMaintenanceEndDate = nextMode === 'Maintenance' ? maintenanceEndDate : '';
+
+    await saveCheckoutSettings({
+      taxRate: Number(checkoutTaxRate),
+      shippingFee: Number(checkoutShippingFee),
+      deliveryDaysText: checkoutDeliveryDaysText.trim() || '2–5 business days',
+      deliveryDaysCount: Number(checkoutDeliveryDaysCount),
+      storeMode: nextMode,
+      maintenanceEndDate: nextMaintenanceEndDate,
+    });
+
+    setMaintenanceEndDate(nextMaintenanceEndDate);
+    showToast(
+      nextMode === 'Maintenance'
+        ? 'Maintenance mode saved successfully'
+        : 'Live mode saved successfully',
+      'success'
+    );
+  }
 
   const exportCustomersCSV = () => {
     const headers = ['Name', 'Email', 'Phone', 'Address', 'Orders', 'Total Spent', 'Last Order'];
@@ -416,17 +538,18 @@ export default function Admin() {
   };
 
   const exportOrdersCSV = () => {
-    const headers = ['Order ID', 'Status', 'Total', 'Payment Method', 'Payment Reference', 'Date', 'Customer Name', 'Customer Email', 'Customer Phone'];
+    const headers = ['Order ID', 'Status', 'Total', 'Payment Method', 'Payment Reference', 'Date', 'Customer Name', 'Customer Email', 'Customer Phone', 'Estimated Delivery Date'];
     const rows = filteredOrders.map(o => [
       `"${o.id}"`,
       `"${o.status || 'Processing'}"`,
       Number(o.total || 0),
-      `"${(o as any).paymentMethod || 'Paystack'}"`,
-      `"${(o as any).paymentReference || 'N/A'}"`,
+      `"${o.paymentMethod || 'Paystack'}"`,
+      `"${o.paymentReference || 'N/A'}"`,
       `"${o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}"`,
-      `"${((o as any).customerName || 'N/A').replace(/"/g, '""')}"`,
-      `"${((o as any).customerEmail || 'N/A').replace(/"/g, '""')}"`,
-      `"${((o as any).customerPhone || 'N/A').replace(/"/g, '""')}"`
+      `"${(o.customerName || 'N/A').replace(/"/g, '""')}"`,
+      `"${(o.customerEmail || 'N/A').replace(/"/g, '""')}"`,
+      `"${(o.customerPhone || 'N/A').replace(/"/g, '""')}"`,
+      `"${getEstimatedDeliveryDisplay(o)}"`
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
@@ -494,15 +617,14 @@ export default function Admin() {
     printWindow.document.close();
   };
 
-  const exportOrderInvoicePDF = (order: Order) => {
+  const exportOrderInvoicePDF = (order: AdminOrder) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const oAny = order as any;
-    const items = oAny.items || [];
-    const subtotal = oAny.subtotal || order.total || 0;
-    const shipping = oAny.shipping || 0;
-    const tax = oAny.tax || 0;
+    const items = order.items || [];
+    const subtotal = order.subtotal || order.total || 0;
+    const shipping = order.shipping || 0;
+    const tax = order.tax || 0;
     const total = order.total || 0;
 
     const html = `
@@ -538,6 +660,7 @@ export default function Admin() {
               <h2 style="margin: 0 0 8px 0;">INVOICE</h2>
               <p><strong>Order ID:</strong> #${order.id}</p>
               <p><strong>Date:</strong> ${order.createdAt ? new Date(order.createdAt).toLocaleString() : 'N/A'}</p>
+              ${getDeliveryLabel(order) !== 'N/A' ? `<p><strong>Estimated Delivery:</strong> ${getDeliveryLabel(order)}</p>` : ''}
               <p><strong>Status:</strong> <span class="badge ${order.status === 'Delivered' ? 'green' : 'gold'}">${order.status || 'Processing'}</span></p>
             </div>
           </div>
@@ -545,18 +668,18 @@ export default function Admin() {
           <div class="invoice-details">
             <div>
               <h3>Bill To:</h3>
-              <p><strong>${oAny.customerName || 'N/A'}</strong></p>
-              <p>${oAny.customerEmail || 'N/A'}</p>
-              <p>${oAny.customerPhone || 'N/A'}</p>
+              <p><strong>${order.customerName || 'N/A'}</strong></p>
+              <p>${order.customerEmail || 'N/A'}</p>
+              <p>${order.customerPhone || 'N/A'}</p>
             </div>
             <div>
               <h3>Ship To:</h3>
-              <p>${oAny.shippingAddress || oAny.address || 'N/A'}</p>
+              <p>${order.shippingAddress || order.customerAddress || order.address || 'N/A'}</p>
             </div>
             <div>
               <h3>Payment Info:</h3>
-              <p><strong>Method:</strong> ${oAny.paymentMethod || 'Paystack'}</p>
-              <p><strong>Reference:</strong> ${oAny.paymentReference || 'N/A'}</p>
+              <p><strong>Method:</strong> ${order.paymentMethod || 'Paystack'}</p>
+              <p><strong>Reference:</strong> ${order.paymentReference || 'N/A'}</p>
             </div>
           </div>
 
@@ -570,7 +693,7 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              ${items.length > 0 ? items.map((item: any) => `
+              ${items.length > 0 ? items.map((item) => `
                 <tr>
                   <td>
                     <div style="font-weight: 500;">${item.name || 'Product'}</div>
@@ -670,10 +793,9 @@ export default function Admin() {
         <a href="#admin">🏠 Dashboard</a>
         <a href="#products">📦 Products &amp; Services</a>
         <a href="#categories">🗂 Categories</a>
-        <a href="#orders">🛒 Orders</a>
         <a href="#bookings">📅 Bookings</a>
         <a href="#customers">👥 Customers</a>
-        <a href="/admin/reports">📊 Financial Reports</a>
+        <Link href="/admin/reports">📊 Financial Reports</Link>
         <a href="#coupons">🎟 Coupons</a>
         <a href="#" style={{ marginTop: 20 }} onClick={(e) => { 
           e.preventDefault(); 
@@ -692,7 +814,45 @@ export default function Admin() {
             <p>Manage JayJayStyles products, services, categories, orders and bookings.</p>
           </div>
 
-          <input className="input" placeholder="Search anything..." style={{ maxWidth: 320 }} />
+<div
+  style={{
+    display: 'flex',
+    gap: 10,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  }}
+>
+  <span
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '10px 16px',
+      borderRadius: '999px',
+      fontWeight: 900,
+      fontSize: '14px',
+      background: storeMode === 'Live' ? '#dcfce7' : '#fef3c7',
+      color: storeMode === 'Live' ? '#166534' : '#92400e',
+      border:
+        storeMode === 'Live'
+          ? '1px solid #86efac'
+          : '1px solid #facc15',
+      boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+    }}
+  >
+    {storeMode === 'Live' ? '🟢 Live Mode' : '🟡 Maintenance Mode'}
+  </span>
+  <button className="btn" onClick={load}>
+    Refresh
+  </button>
+</div>
+
+  <input
+    className="input"
+    placeholder="Search..."
+    style={{ maxWidth: 120 }}
+  />
+          
         </div>
 
         <div className="stats-grid">
@@ -717,50 +877,175 @@ export default function Admin() {
           </motion.div>
         </div>
 
-        <section className="table-card" style={{ maxWidth: 520 }}>
-          <div className="admin-section-title">
-            <div>
-              <h2>Checkout Settings</h2>
-              <p>Tax percentage and shipping fee for checkout calculations.</p>
-            </div>
-          </div>
+        <section className="table-card" id="settings">
+  <h2>Store & Checkout Settings</h2>
+  <p style={{ color: '#64748b', marginBottom: '22px' }}>
+    Store status, tax percentage, shipping fee, and delivery estimates.
+  </p>
 
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <select
-              className="input"
-              value={String(checkoutTaxRate)}
-              onChange={(e) => setCheckoutTaxRate(Number(e.target.value))}
-              style={{ width: 180 }}
-            >
-              <option value="0">0%</option>
-              <option value="5">5%</option>
-              <option value="7.5">7.5%</option>
-              <option value="10">10%</option>
-            </select>
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+      gap: '18px',
+      alignItems: 'end',
+    }}
+  >
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontWeight: 800,
+          marginBottom: '8px',
+          color: '#111827',
+        }}
+      >
+        Store Mode
+      </label>
+      <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '13px' }}>
+        Choose if customers can shop or if the store is under maintenance.
+      </p>
 
-            <input
-              className="input"
-              type="number"
-              placeholder="Shipping fee (e.g. 1500)"
-              value={checkoutShippingFee}
-              onChange={(e) => setCheckoutShippingFee(Number(e.target.value))}
-              style={{ width: 220 }}
-            />
+      <select
+        className="input"
+        value={storeMode}
+        onChange={(e) =>
+          setStoreMode(e.target.value as 'Live' | 'Maintenance')
+        }
+      >
+        <option value="Live">Live Mode</option>
+        <option value="Maintenance">Maintenance Mode</option>
+      </select>
+    </div>
 
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <button
-                className="btn"
-                onClick={async () => {
-                  const payload = { taxRate: Number(checkoutTaxRate), shippingFee: Number(checkoutShippingFee) };
-                  await saveCheckoutSettings(payload);
-                  showToast('Checkout settings updated successfully');
-                }}
-              >
-                Save Settings
-              </button>
-            </div>
-          </div>
-        </section>
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontWeight: 800,
+          marginBottom: '8px',
+          color: '#111827',
+        }}
+      >
+        Tax Rate
+      </label>
+      <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '13px' }}>
+        Percentage added as tax at checkout.
+      </p>
+
+      <input
+        className="input"
+        type="number"
+        value={checkoutTaxRate}
+        onChange={(e) => setCheckoutTaxRate(Number(e.target.value))}
+        placeholder="Example: 7.5"
+      />
+    </div>
+
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontWeight: 800,
+          marginBottom: '8px',
+          color: '#111827',
+        }}
+      >
+        Shipping Fee
+      </label>
+      <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '13px' }}>
+        Delivery fee customers will pay at checkout.
+      </p>
+
+      <input
+        className="input"
+        type="number"
+        value={checkoutShippingFee}
+        onChange={(e) => setCheckoutShippingFee(Number(e.target.value))}
+        placeholder="Example: 1500"
+      />
+    </div>
+
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontWeight: 800,
+          marginBottom: '8px',
+          color: '#111827',
+        }}
+      >
+        Delivery Text
+      </label>
+      <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '13px' }}>
+        This is what customers will see, like “1–2 business days”.
+      </p>
+
+      <input
+        className="input"
+        value={checkoutDeliveryDaysText}
+        onChange={(e) => setCheckoutDeliveryDaysText(e.target.value)}
+        placeholder="Example: 1–2 business days"
+      />
+    </div>
+
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontWeight: 800,
+          marginBottom: '8px',
+          color: '#111827',
+        }}
+      >
+        Delivery Days Count
+      </label>
+      <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '13px' }}>
+        Used to calculate the estimated delivery date.
+      </p>
+
+      <input
+        className="input"
+        type="number"
+        value={checkoutDeliveryDaysCount}
+        onChange={(e) => setCheckoutDeliveryDaysCount(Number(e.target.value))}
+        placeholder="Example: 2"
+      />
+    </div>
+
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontWeight: 800,
+          marginBottom: '8px',
+          color: '#111827',
+        }}
+      >
+        Maintenance End Date
+      </label>
+      <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '13px' }}>
+        Optional date when maintenance should end.
+      </p>
+
+      <input
+        className="input"
+        type="datetime-local"
+        value={maintenanceEndDate}
+        onChange={(e) => setMaintenanceEndDate(e.target.value)}
+        disabled={storeMode !== 'Maintenance'}
+      />
+    </div>
+  </div>
+
+  <button
+    className="btn"
+    onClick={saveAdminCheckoutSettings}
+    style={{ marginTop: '22px' }}
+  >
+    Save Settings
+  </button>
+</section>
 
         <section className="table-card category-card" id="categories">
           <div className="admin-section-title">
@@ -1108,6 +1393,7 @@ export default function Admin() {
                 <th>Method</th>
                 <th>Reference</th>
                 <th>Date</th>
+                <th>Est. Delivery</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1115,7 +1401,7 @@ export default function Admin() {
             <tbody>
               {paginatedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center' }}>No orders found</td>
+                  <td colSpan={8} style={{ textAlign: 'center' }}>No orders found</td>
                 </tr>
               ) : (
                 paginatedOrders.map((o) => (
@@ -1123,12 +1409,13 @@ export default function Admin() {
                     <td>#{o.id}</td>
                     <td>{o.status || 'Processing'}</td>
                     <td>{money(Number(o.total || 0))}</td>
-                    <td>{(o as any).paymentMethod || 'Paystack'}</td>
-                    <td>{(o as any).paymentReference || 'N/A'}</td>
+                    <td>{o.paymentMethod || 'Paystack'}</td>
+                    <td>{o.paymentReference || 'N/A'}</td>
                     <td>{o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}</td>
+                    <td>{getEstimatedDeliveryDisplay(o)}</td>
                     <td>
                       <button onClick={() => window.open(`/invoice/${o.id}`, '_blank')}>View Invoice</button>
-                      <button onClick={() => window.open(`/invoice/${o.id}?print=true`, '_blank')}>Print Invoice</button>
+                      <button onClick={() => exportOrderInvoicePDF(o)}>Print Invoice</button>
                       <button onClick={async () => { 
                         if (confirm(`Mark order #${o.id} as Shipped?`)) {
                           await updateOrderStatus(o.id, 'Shipped'); 
@@ -1141,7 +1428,7 @@ export default function Admin() {
                           load(); 
                         }
                       }}>Deliver</button>
-                      {(o as any).paymentMethod === 'OPay' ? (
+                      {o.paymentMethod === 'OPay' ? (
                         <button onClick={() => handleRefund(o)}>Refund & Cancel</button>
                       ) : (
                         <button onClick={async () => { 
@@ -1303,37 +1590,243 @@ export default function Admin() {
         <section className="table-card" id="coupons">
           <h2>Coupons</h2>
 
-          <div className="admin-form-grid">
-            <input
-              className="input"
-              placeholder="Coupon Code"
-              value={couponForm.code}
-              onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value })}
-            />
+          <div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '18px',
+    alignItems: 'end',
+  }}
+>
+  <div>
+    <label
+      style={{
+        display: 'block',
+        fontWeight: 800,
+        marginBottom: '8px',
+        color: '#111827',
+      }}
+    >
+      Coupon Code
+    </label>
 
-            <input
-              className="input"
-              placeholder="Discount"
-              type="number"
-              value={couponForm.discount}
-              onChange={(e) => setCouponForm({ ...couponForm, discount: +e.target.value })}
-            />
+    <p
+      style={{
+        margin: '0 0 8px',
+        color: '#64748b',
+        fontSize: '13px',
+        lineHeight: 1.5,
+      }}
+    >
+      The code customers will type at checkout, like WELCOME10.
+    </p>
 
-            <input
-              className="input"
-              placeholder="Minimum Order"
-              type="number"
-              value={couponForm.minOrder}
-              onChange={(e) => setCouponForm({ ...couponForm, minOrder: +e.target.value })}
-            />
+    <input
+      className="input"
+      placeholder="Example: WELCOME10"
+      value={couponForm.code}
+      onChange={(e) =>
+        setCouponForm({
+          ...couponForm,
+          code: e.target.value.toUpperCase(),
+        })
+      }
+    />
+  </div>
 
-            <input
-              className="input"
-              type="date"
-              value={couponForm.expiryDate}
-              onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
-            />
-          </div>
+  <div>
+    <label
+      style={{
+        display: 'block',
+        fontWeight: 800,
+        marginBottom: '8px',
+        color: '#111827',
+      }}
+    >
+      Discount Amount
+    </label>
+
+    <p
+      style={{
+        margin: '0 0 8px',
+        color: '#64748b',
+        fontSize: '13px',
+        lineHeight: 1.5,
+      }}
+    >
+      Enter the discount value. Example: 10 for 10% or ₦10.
+    </p>
+
+    <input
+      className="input"
+      placeholder="Example: 10"
+      type="number"
+      value={couponForm.discount}
+      onChange={(e) =>
+        setCouponForm({
+          ...couponForm,
+          discount: Number(e.target.value),
+        })
+      }
+    />
+  </div>
+
+  <div>
+    <label
+      style={{
+        display: 'block',
+        fontWeight: 800,
+        marginBottom: '8px',
+        color: '#111827',
+      }}
+    >
+      Discount Type
+    </label>
+
+    <p
+      style={{
+        margin: '0 0 8px',
+        color: '#64748b',
+        fontSize: '13px',
+        lineHeight: 1.5,
+      }}
+    >
+      Choose percentage discount or fixed naira discount.
+    </p>
+
+    <select
+      className="input"
+      value={couponForm.type}
+      onChange={(e) =>
+        setCouponForm({
+          ...couponForm,
+          type: e.target.value,
+        })
+      }
+    >
+      <option value="percentage">Percentage</option>
+      <option value="fixed">Fixed Amount</option>
+    </select>
+  </div>
+
+  <div>
+    <label
+      style={{
+        display: 'block',
+        fontWeight: 800,
+        marginBottom: '8px',
+        color: '#111827',
+      }}
+    >
+      Minimum Order
+    </label>
+
+    <p
+      style={{
+        margin: '0 0 8px',
+        color: '#64748b',
+        fontSize: '13px',
+        lineHeight: 1.5,
+      }}
+    >
+      Minimum cart amount before this coupon can work.
+    </p>
+
+    <input
+      className="input"
+      placeholder="Example: 5000"
+      type="number"
+      value={couponForm.minOrder}
+      onChange={(e) =>
+        setCouponForm({
+          ...couponForm,
+          minOrder: Number(e.target.value),
+        })
+      }
+    />
+  </div>
+
+  <div>
+    <label
+      style={{
+        display: 'block',
+        fontWeight: 800,
+        marginBottom: '8px',
+        color: '#111827',
+      }}
+    >
+      Expiry Date
+    </label>
+
+    <p
+      style={{
+        margin: '0 0 8px',
+        color: '#64748b',
+        fontSize: '13px',
+        lineHeight: 1.5,
+      }}
+    >
+      The date this coupon should stop working.
+    </p>
+
+    <input
+      className="input"
+      type="date"
+      value={couponForm.expiryDate}
+      onChange={(e) =>
+        setCouponForm({
+          ...couponForm,
+          expiryDate: e.target.value,
+        })
+      }
+    />
+  </div>
+
+  <div>
+    <label
+      style={{
+        display: 'block',
+        fontWeight: 800,
+        marginBottom: '8px',
+        color: '#111827',
+      }}
+    >
+      Coupon Status
+    </label>
+
+    <p
+      style={{
+        margin: '0 0 8px',
+        color: '#64748b',
+        fontSize: '13px',
+        lineHeight: 1.5,
+      }}
+    >
+      Turn this on if customers are allowed to use the coupon.
+    </p>
+
+    <label
+      className="input"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={couponForm.active}
+        onChange={(e) =>
+          setCouponForm({
+            ...couponForm,
+            active: e.target.checked,
+          })
+        }
+      />
+      Active Coupon
+    </label>
+  </div>
+</div>
 
           <br />
 
