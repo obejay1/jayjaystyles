@@ -11,6 +11,9 @@ import {
   removeProduct,
   money,
   updateOrderStatus,
+  getCategories,
+  saveCategory,
+  removeCategory,
 } from '@/lib/store';
 import {
   getBookings, 
@@ -20,19 +23,9 @@ import {
 } from '@/lib/bookings';
 import { getCoupons, saveCoupon, removeCoupon, Coupon } from '@/lib/coupons';
 import { getCheckoutSettings, saveCheckoutSettings } from '@/lib/settings';
-import { Product, Order } from '@/lib/types';
+import { Product, Order, Category } from '@/lib/types';
 import { showToast } from '@/lib/toast';
 
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  type: 'product' | 'service' | 'both';
-  image: string;
-  description: string;
-  active: boolean;
-};
 
 type AdminOrder = Omit<Order, 'items'> & {
   customerName?: string;
@@ -77,45 +70,6 @@ type Customer = {
   orders: AdminOrder[];
 };
 
-const defaultCategories: Category[] = [
-  {
-    id: 'hair',
-    name: 'Hair Extensions & Wigs',
-    slug: 'hair-extensions-wigs',
-    type: 'product',
-    image: '',
-    description: 'Premium wigs, hair extensions, closures, frontals and hair care products.',
-    active: true,
-  },
-  {
-    id: 'makeup',
-    name: 'Makeup & Skincare',
-    slug: 'makeup-skincare',
-    type: 'product',
-    image: '',
-    description: 'Professional makeup, skincare and beauty products.',
-    active: true,
-  },
-  {
-    id: 'gele',
-    name: 'Gele & Beads',
-    slug: 'gele-beads',
-    type: 'both',
-    image: '',
-    description: 'Gele accessories, coral beads and fashion accessories.',
-    active: true,
-  },
-  {
-    id: 'kitchen',
-    name: 'Kitchen Accessories',
-    slug: 'kitchen-accessories',
-    type: 'product',
-    image: '',
-    description: 'Stylish and useful kitchen accessories.',
-    active: true,
-  },
-];
-
 const blankProduct: Product = {
   id: '',
   name: '',
@@ -125,12 +79,13 @@ const blankProduct: Product = {
   description: '',
   image: '',
   stock: 1,
+  featured: false,
+  active: true,
 };
 
 const blankCategory: Category = {
   id: '',
   name: '',
-  slug: '',
   type: 'product',
   image: '',
   description: '',
@@ -190,6 +145,7 @@ export default function Admin() {
     setOrders(await getOrders() as AdminOrder[]);
     setBookings(await getBookings());
     setCoupons(await getCoupons());
+    setCategories(await getCategories());
 
     try {
       const s = await getCheckoutSettings() as Awaited<ReturnType<typeof getCheckoutSettings>> & {
@@ -223,14 +179,6 @@ export default function Admin() {
       /* ignore */
     }
 
-    const saved = localStorage.getItem('jj-categories');
-    if (saved) {
-      setCategories(JSON.parse(saved));
-    } else {
-      localStorage.setItem('jj-categories', JSON.stringify(defaultCategories));
-      setCategories(defaultCategories);
-    }
-
     try {
       const usersSnap = await getDocs(collection(db, 'users'));
       setUsers(usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -242,11 +190,6 @@ export default function Admin() {
   useEffect(() => {
     if (ok) load();
   }, [ok]);
-
-  function saveCategories(next: Category[]) {
-    setCategories(next);
-    localStorage.setItem('jj-categories', JSON.stringify(next));
-  }
 
   async function submitProduct() {
     const p = {
@@ -278,34 +221,20 @@ export default function Admin() {
     reader.readAsDataURL(file);
   }
 
-  function submitCategory() {
+  async function submitCategory() {
     if (!categoryForm.name.trim()) {
       alert('Please enter category name');
       return;
     }
 
-    const slug =
-      categoryForm.slug ||
-      categoryForm.name
-        .toLowerCase()
-        .trim()
-        .replaceAll(' ', '-')
-        .replace(/[^a-z0-9-]/g, '');
-
     const newCategory: Category = {
       ...categoryForm,
       id: categoryForm.id || Date.now().toString(),
-      slug,
     };
 
-    const exists = categories.some((c) => c.id === newCategory.id);
-
-    const next = exists
-      ? categories.map((c) => (c.id === newCategory.id ? newCategory : c))
-      : [newCategory, ...categories];
-
-    saveCategories(next);
+    await saveCategory(newCategory);
     setCategoryForm(blankCategory);
+    load();
   }
 
   function editCategory(category: Category) {
@@ -313,9 +242,10 @@ export default function Admin() {
     document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  function deleteCategory(id: string) {
+  async function deleteCategory(id: string) {
     if (!confirm('Delete this category?')) return;
-    saveCategories(categories.filter((c) => c.id !== id));
+    await removeCategory(id);
+    load();
   }
 
   async function submitCoupon() {
@@ -1065,28 +995,18 @@ export default function Admin() {
               }
             />
 
-            <input
-              className="input"
-              placeholder="Slug e.g hair-extensions"
-              value={categoryForm.slug}
-              onChange={(e) =>
-                setCategoryForm({ ...categoryForm, slug: e.target.value })
-              }
-            />
-
             <select
               className="input"
               value={categoryForm.type}
               onChange={(e) =>
                 setCategoryForm({
                   ...categoryForm,
-                  type: e.target.value as 'product' | 'service' | 'both',
+                  type: e.target.value as 'product' | 'service',
                 })
               }
             >
               <option value="product">Product</option>
               <option value="service">Service</option>
-              <option value="both">Both</option>
             </select>
 
             <select
@@ -1170,7 +1090,6 @@ export default function Admin() {
               <tr>
                 <th>Image</th>
                 <th>Name</th>
-                <th>Slug</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th>Description</th>
@@ -1195,7 +1114,6 @@ export default function Admin() {
                     )}
                   </td>
                   <td>{c.name}</td>
-                  <td>{c.slug}</td>
                   <td>
                     <span className="badge gold">{c.type}</span>
                   </td>
@@ -1239,6 +1157,7 @@ export default function Admin() {
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
             >
+              <option value="">Select Category</option>
               {categories
                 .filter((c) => c.active)
                 .map((cat) => (
@@ -1303,6 +1222,24 @@ export default function Admin() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
+
+            <label className="input" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={form.featured || false}
+                onChange={(e) => setForm({ ...form, featured: e.target.checked })}
+              />
+              Featured
+            </label>
+
+            <label className="input" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={form.active ?? true}
+                onChange={(e) => setForm({ ...form, active: e.target.checked })}
+              />
+              Active
+            </label>
           </div>
 
           {form.image && (

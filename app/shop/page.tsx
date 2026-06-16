@@ -1,29 +1,52 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ShoppingCart, User } from 'lucide-react';
-import { getProducts, getCart } from '@/lib/store';
-import { Product } from '@/lib/types';
+import { getProducts, getCart, getCategories } from '@/lib/store';
+import { Product, Category } from '@/lib/types';
 import ProductCard from '@/components/ProductCard';
 import { trackEvent } from '@/lib/analytics';
 import Loading from '@/components/Loading';
 import Footer from '@/components/Footer';
 
 export default function Shop() {
+  return (
+    <Suspense fallback={<Loading fullScreen />}>
+      <ShopContent />
+    </Suspense>
+  );
+}
+
+function ShopContent() {
+  const searchParams = useSearchParams();
+  const queryCategory = searchParams.get('category');
+
   const [products, setProducts] = useState<Product[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState('All');
+  const [category, setCategory] = useState(queryCategory || 'All');
   const [cartCount, setCartCount] = useState(0);
   const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [sortOption, setSortOption] = useState('default');
+  const [hideOutOfStock, setHideOutOfStock] = useState(false);
 
   useEffect(() => {
-    getProducts().then(res => {
-      setProducts(res.filter(p => p.type === 'product'));
+    if (queryCategory) {
+      setCategory(queryCategory);
+    }
+  }, [queryCategory]);
+
+  useEffect(() => {
+    Promise.all([getProducts(), getCategories()]).then(([prods, cats]) => {
+      setProducts(prods.filter(p => p.type === 'product'));
+      setAllCategories(cats);
       setLoading(false);
       try {
-        const list = res.filter(p => p.type === 'product');
+        const list = prods.filter(p => p.type === 'product');
         trackEvent('view_item_list', {
           item_list_name: 'Products',
           items: list.map((p, i) => ({
@@ -51,7 +74,12 @@ export default function Shop() {
     };
   }, []);
 
-  const categories = ['All', 'Hair', 'Beauty', 'Accessories', 'Skincare'];
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [category, search, sortOption, hideOutOfStock]);
+
+  const categories = ['All', ...Array.from(new Set(allCategories.filter(c => c.type !== 'service' && c.active !== false).map(c => c.name)))];
+
   // Filter by category first, then by search
   let filteredProducts = category === 'All' ? products : products.filter(p => p.category === category);
   if (search.trim()) {
@@ -62,6 +90,21 @@ export default function Shop() {
       (p.description && p.description.toLowerCase().includes(s))
     );
   }
+
+  if (hideOutOfStock) {
+    filteredProducts = filteredProducts.filter(p => (p.stock || 0) > 0);
+  }
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortOption === 'price-asc') return (a.price || 0) - (b.price || 0);
+    if (sortOption === 'price-desc') return (b.price || 0) - (a.price || 0);
+    if (sortOption === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+    if (sortOption === 'name-desc') return (b.name || '').localeCompare(a.name || '');
+    return 0; // default
+  });
+
+  const displayedProducts = sortedProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedProducts.length;
 
   if (loading) return <Loading fullScreen />;
 
@@ -105,12 +148,35 @@ export default function Shop() {
 
       <div className="shop-toolbar-pro">
         <div className="shop-search-pro">
-          <input
-            type="text"
-            placeholder="Search for products, brands, and more..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              placeholder="Search for products, brands, and more..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ marginBottom: 0, flex: '1 1 250px' }}
+            />
+            <select
+              value={sortOption}
+              onChange={e => setSortOption(e.target.value)}
+              style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e5e5e5', outline: 'none', background: 'white', cursor: 'pointer', fontSize: '1rem', flex: '0 0 auto' }}
+            >
+              <option value="default">Sort: Latest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="name-asc">Name: A to Z</option>
+              <option value="name-desc">Name: Z to A</option>
+            </select>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'white', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e5e5e5', flex: '0 0 auto' }}>
+              <input
+                type="checkbox"
+                checked={hideOutOfStock}
+                onChange={e => setHideOutOfStock(e.target.checked)}
+                style={{ width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '1rem', color: '#111' }}>In Stock Only</span>
+            </label>
+          </div>
           <div className="shop-category-pro">
             {categories.map(c => (
               <button key={c} className={category === c ? 'active' : ''} onClick={() => setCategory(c)}>
@@ -125,7 +191,7 @@ export default function Shop() {
         <div className="shop-section-head">
           <div>
             <span>Our Products</span>
-            <h2>Latest Arrivals</h2>
+            <h2>{category === 'All' ? 'Latest Arrivals' : `${category} Products`}</h2>
           </div>
           <p>Showing {filteredProducts.length} products</p>
         </div>
@@ -189,6 +255,10 @@ export default function Shop() {
               .desktop-only { display: none !important; } 
               .nav-container { padding-left: 16px; padding-right: 16px; }
             }
+          
+          .load-more-container { text-align: center; margin: 32px 0 16px 0; width: 100%; }
+          .load-more-btn { background: #111827; color: white; border: none; padding: 12px 32px; border-radius: 999px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
+          .load-more-btn:hover { background: #374151; }
           `}</style>
           {filteredProducts.length === 0 ? (
             <div className="shop-empty-pro">
@@ -196,11 +266,19 @@ export default function Shop() {
               <p>Try changing your category or search term.</p>
             </div>
           ) : (
-            filteredProducts.map(product => (
+          displayedProducts.map(product => (
               <ProductCard key={product.id} p={product} />
             ))
           )}
         </div>
+
+      {hasMore && (
+        <div className="load-more-container">
+          <button className="load-more-btn" onClick={() => setVisibleCount(v => v + 12)}>
+            Load More Products
+          </button>
+        </div>
+      )}
       </main>
       <Footer />
     </div>

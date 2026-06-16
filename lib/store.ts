@@ -14,60 +14,86 @@ import {
   addDoc,
 } from 'firebase/firestore';
 
-import { Product, Order, Session } from './types';
+import { Product, Order, Session, Category } from './types';
 import { seedProducts } from './seed';
-
-export type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  type: 'product' | 'service' | 'both';
-  image?: string;
-  description?: string;
-  active: boolean;
-  createdAt?: string;
-};
 
 export const defaultCategories: Category[] = [
   {
-    id: 'hair-extensions-wigs',
-    name: 'Hair Extensions & Wigs',
-    slug: 'hair-extensions-wigs',
+    id: 'skincare-beauty',
+    name: 'Skincare & Beauty',
+    slug: 'skincare-beauty',
     type: 'product',
-    image: '',
-    description: 'Premium wigs, hair extensions, closures, frontals and hair care products.',
     active: true,
-    createdAt: new Date().toISOString(),
   },
   {
-    id: 'makeup-skincare',
-    name: 'Makeup & Skincare',
-    slug: 'makeup-skincare',
+    id: 'hair-care',
+    name: 'Hair Care',
+    slug: 'hair-care',
     type: 'product',
-    image: '',
-    description: 'Professional makeup, skincare and beauty products.',
     active: true,
-    createdAt: new Date().toISOString(),
   },
   {
-    id: 'gele-beads',
-    name: 'Gele & Beads',
-    slug: 'gele-beads',
-    type: 'both',
-    image: '',
-    description: 'Gele accessories, coral beads and fashion accessories.',
+    id: 'cleaning-household',
+    name: 'Cleaning & Household',
+    slug: 'cleaning-household',
+    type: 'product',
     active: true,
-    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'perfumes-fragrances',
+    name: 'Perfumes & Fragrances',
+    slug: 'perfumes-fragrances',
+    type: 'product',
+    active: true,
+  },
+  {
+    id: 'nail-care',
+    name: 'Nail Care',
+    slug: 'nail-care',
+    type: 'product',
+    active: true,
+  },
+  {
+    id: 'wigs',
+    name: 'Wigs',
+    slug: 'wigs',
+    type: 'product',
+    active: true,
+  },
+  {
+    id: 'fashion-accessories',
+    name: 'Fashion Accessories',
+    slug: 'fashion-accessories',
+    type: 'product',
+    active: true,
   },
   {
     id: 'kitchen-accessories',
     name: 'Kitchen Accessories',
     slug: 'kitchen-accessories',
     type: 'product',
-    image: '',
-    description: 'Stylish and useful kitchen accessories.',
     active: true,
-    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'hair-services',
+    name: 'Hair Services',
+    slug: 'hair-services',
+    type: 'service',
+    active: true,
+  },
+  {
+    id: 'makeup-gele',
+    name: 'Makeup & Gele',
+    slug: 'makeup-gele',
+    type: 'service',
+    active: true,
+  },
+  {
+    id: 'beauty-spa',
+    name: 'Beauty & Spa Services',
+    slug: 'beauty-spa',
+    type: 'service',
+    active: true,
   },
 ];
 

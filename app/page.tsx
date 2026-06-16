@@ -18,20 +18,22 @@ import {
   MessageCircle,
   Sparkles,
 } from 'lucide-react';
-import { getProducts, getWishlist, getCart } from '@/lib/store';
-import { Product } from '@/lib/types';
+import { getProducts, getWishlist, getCart, getCategories } from '@/lib/store';
+import { Product, Category } from '@/lib/types';
 import { motion } from 'framer-motion';
 import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     getProducts().then(setProducts);
+    getCategories().then(setCategories);
   }, []);
 
   useEffect(() => {
@@ -78,20 +80,20 @@ export default function Home() {
             </div>
           </Link>
 
-          <div className="jj-search w-[170px] md:w-[280px]">
-            <Search size={20} />
-            <input 
-              className="px-3 py-2 w-full" 
-              placeholder="Search products, services..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-            />
-          </div>
+          <div className="jj-search mobile-search-small">
+  <Search size={18} />
+  <input
+    className="mobile-search-input"
+    placeholder="Search product"
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }}
+  />
+</div>
 
           <div className="jj-actions">
             <Link href="/wishlist">
@@ -176,9 +178,9 @@ export default function Home() {
         <h2>Shop by Category</h2>
 
         <div className="jj-category-grid">
-          {['Hair Products', 'Makeup', 'Gele & Beads', 'Kitchen Accessories', 'Fashion Accessories', 'Beauty Services'].map((item) => (
-            <Link href={item === 'Beauty Services' ? '/services' : '/shop'} key={item}>
-              {item}
+          {categories.filter(c => c.active !== false).map((c) => (
+            <Link href={c.type === 'service' ? `/services?category=${encodeURIComponent(c.name)}` : `/shop?category=${encodeURIComponent(c.name)}`} key={c.id}>
+              {c.name}
             </Link>
           ))}
         </div>
